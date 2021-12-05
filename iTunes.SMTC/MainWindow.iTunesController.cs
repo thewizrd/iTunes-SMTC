@@ -19,6 +19,7 @@ namespace iTunes.SMTC
         private IITTrack _currentTrack;
         private bool _isPlaying = false;
 
+        private MediaPlayer _mediaPlayer;
         private SystemMediaTransportControls _systemMediaTransportControls;
 
         private DispatcherQueueController iTunesDispatcherCtrl;
@@ -29,7 +30,9 @@ namespace iTunes.SMTC
 
         private void InitializeSMTC()
         {
-            _systemMediaTransportControls = BackgroundMediaPlayer.Current.SystemMediaTransportControls;
+            _mediaPlayer = new MediaPlayer();
+            _mediaPlayer.CommandManager.IsEnabled = false;
+            _systemMediaTransportControls = _mediaPlayer.SystemMediaTransportControls;
             _systemMediaTransportControls.IsEnabled = true;
             _systemMediaTransportControls.IsNextEnabled = true;
             _systemMediaTransportControls.IsPauseEnabled = true;

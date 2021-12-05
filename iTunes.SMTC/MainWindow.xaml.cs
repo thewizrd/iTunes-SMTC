@@ -141,6 +141,12 @@ namespace iTunes.SMTC
                         taskbarIcon.Dispose();
                         taskbarIcon = null;
                     }
+                    if (_mediaPlayer != null)
+                    {
+                        _systemMediaTransportControls = null;
+                        _mediaPlayer.Dispose();
+                        _mediaPlayer = null;
+                    }
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
