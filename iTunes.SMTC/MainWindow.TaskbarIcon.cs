@@ -42,7 +42,7 @@ namespace iTunes.SMTC
 
                 var quitMenuItem = new MenuItem()
                 {
-                    Header = "Quit"
+                    Header = "Exit"
                 };
                 quitMenuItem.Click += (s, e) =>
                 {
@@ -51,6 +51,8 @@ namespace iTunes.SMTC
                 ctxMenu.Items.Add(quitMenuItem);
 
                 taskbarIcon.ContextMenu = ctxMenu;
+
+                taskbarIcon.Visibility = Settings.MinimizeToTray ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             }
         }
 

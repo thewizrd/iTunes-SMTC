@@ -7,7 +7,32 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.Resources>
+            <Style x:Key="CommandBarLabel" TargetType="TextBlock">
+                <Setter Property="Margin" Value="10,0,0,0" />
+                <Setter Property="CharacterSpacing" Value="10" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+            <Style
+                x:Key="SettingTitleStyle"
+                BasedOn="{StaticResource CommandBarLabel}"
+                TargetType="TextBlock">
+                <Setter Property="Padding" Value="0,10" />
+                <Setter Property="Margin" Value="0,5" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="18" />
+            </Style>
+            <Style x:Key="PrefTitleStyle" TargetType="TextBlock">
+                <Setter Property="Padding" Value="0,5" />
+                <Setter Property="FontWeight" Value="Normal" />
+            </Style>
+        </Grid.Resources>
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -27,10 +52,25 @@
         </StackPanel>
 
         <ScrollViewer Grid.Row="1"
-                      Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
                       HorizontalScrollMode="Disabled"
                       VerticalScrollBarVisibility="Auto"
                       VerticalScrollMode="Auto">
+            <StackPanel Padding="16,0,16,16">
+                <TextBlock Text="Settings"
+                           Margin="0,5"
+                           Style="{ThemeResource SettingTitleStyle}" />
+                <Rectangle Height="12" />
+                <TextBlock Style="{ThemeResource PrefTitleStyle}"
+                           Text="Start minimized" />
+                <StackPanel Padding="10,5" Orientation="Horizontal">
+                    <ToggleSwitch x:Name="StartMinimizedSwitch" />
+                </StackPanel>
+                <TextBlock Style="{ThemeResource PrefTitleStyle}"
+                           Text="Minimize to tray" />
+                <StackPanel Padding="10,5" Orientation="Horizontal">
+                    <ToggleSwitch x:Name="MinimizeToTraySwitch" />
+                </StackPanel>
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </Window>

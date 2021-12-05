@@ -1,5 +1,6 @@
 ﻿using iTunes.SMTC.Utils;
 using iTunesLib;
+using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -37,17 +38,32 @@ namespace iTunes.SMTC
         private bool disposedValue;
         private const string ICO_PATH = @"Resources\App.ico";
 
+        private AppWindow _AppWindow;
+
         public MainWindow()
         {
             InitializeComponent();
 
             Title = "iTunes MediaController Settings";
-            ExtendsContentIntoTitleBar = true;
-            SetTitleBar(AppTitleBar);
 
             this.LoadIcon(ICO_PATH);
-            this.SetWindowSize(600, 600);
             this.CreateTaskBarIcon();
+
+            // Set window attributes
+            _AppWindow = this.GetAppWindow();
+            // Disable resizing and remove min/max window buttons
+            _AppWindow.SetPresenter(AppWindowPresenterKind.CompactOverlay);
+            _AppWindow.Resize(new Windows.Graphics.SizeInt32(480, 360));
+            this.PlacementCenterWindowInMonitorWin32();
+            // Setup titlebar
+            _AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+            _AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            _AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+            _AppWindow.Closing += _AppWindow_Closing;
+            _AppWindow.Changed += MainAppWindow_Changed;
+
+            InitializeSettings();
 
             iTunesDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
             iTunesDispatcher = iTunesDispatcherCtrl.DispatcherQueue;
@@ -59,6 +75,51 @@ namespace iTunes.SMTC
             InitializeControls(_iTunesApp.CurrentTrack);
         }
 
+        // Override closing event
+        private void _AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
+        {
+            // Disable closing application
+            if (Settings.MinimizeToTray)
+            {
+                args.Cancel = true;
+                this.Hide();
+            }
+        }
+
+        private void MainAppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+        {
+            if (args.DidSizeChange && sender.TitleBar.ExtendsContentIntoTitleBar)
+            {
+                // Need to update our drag region if the size of the window changes
+                SetDragRegionForCustomTitleBar(sender);
+            }
+        }
+
+        private void SetDragRegionForCustomTitleBar(AppWindow appWindow)
+        {
+            //Infer titlebar height
+            int titleBarHeight = appWindow.TitleBar.Height;
+            AppTitleBar.Height = titleBarHeight;
+
+            // Get caption button occlusion information
+            // Use LeftInset if you've explicitly set your window layout to RTL or if app language is a RTL language
+            int CaptionButtonOcclusionWidth = appWindow.TitleBar.RightInset;
+
+            // Define your drag Regions
+            int windowIconWidthAndPadding = (int)AppIcon.ActualWidth + (int)AppIcon.Margin.Right;
+            int dragRegionWidth = appWindow.Size.Width - (CaptionButtonOcclusionWidth + windowIconWidthAndPadding);
+
+            Windows.Graphics.RectInt32[] dragRects = new Windows.Graphics.RectInt32[] { };
+            Windows.Graphics.RectInt32 dragRect;
+
+            dragRect.X = windowIconWidthAndPadding;
+            dragRect.Y = 0;
+            dragRect.Height = titleBarHeight;
+            dragRect.Width = dragRegionWidth;
+
+            appWindow.TitleBar.SetDragRectangles(dragRects.Append(dragRect).ToArray());
+        }
+
         private void ThrowIfDisposed()
         {
             if (disposedValue)
@@ -66,6 +127,7 @@ namespace iTunes.SMTC
                 throw new ObjectDisposedException(typeof(iTunesApp).FullName);
             }
         }
+
         private void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -77,6 +139,7 @@ namespace iTunes.SMTC
                     {
                         taskbarIcon.Visibility = System.Windows.Visibility.Collapsed;
                         taskbarIcon.Dispose();
+                        taskbarIcon = null;
                     }
                 }
 

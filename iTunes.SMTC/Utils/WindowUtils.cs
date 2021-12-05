@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using PInvoke;
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace iTunes.SMTC.Utils
 {
@@ -98,6 +99,18 @@ namespace iTunes.SMTC.Utils
                 User32.LoadImageFlags.LR_LOADFROMFILE | User32.LoadImageFlags.LR_SHARED);
 
             User32.SendMessage(hwnd, User32.WindowMessage.WM_SETICON, (System.IntPtr)ICON_BIG, smIconHndl);
+        }
+
+        public static void Minimize(this Window window)
+        {
+            var hwnd = window.GetHWND();
+            User32.ShowWindow(hwnd, User32.WindowShowStyle.SW_MINIMIZE);
+        }
+
+        public static void Hide(this Window window)
+        {
+            var hwnd = window.GetHWND();
+            User32.ShowWindow(hwnd, User32.WindowShowStyle.SW_HIDE);
         }
     }
 }

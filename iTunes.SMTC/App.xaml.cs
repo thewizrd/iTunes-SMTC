@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Windows.Controls;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -30,6 +31,8 @@ namespace iTunes.SMTC
     /// </summary>
     public partial class App : Application
     {
+        private static Mutex _mutex = null;
+
         private MainWindow m_window;
         private Window _MainWindow
         {
@@ -58,34 +61,35 @@ namespace iTunes.SMTC
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            // Get the activation args
-            var appArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+            const string appName = "iTunes.SMTC";
 
-            // Get or register the main instance
-            var mainInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("main");
+            _mutex = new Mutex(true, appName, out bool createdNew);
 
-            // If the main instance isn't this current instance
-            if (!mainInstance.IsCurrent)
+            if (!createdNew)
             {
-                // Redirect activation to that instance
-                await mainInstance.RedirectActivationToAsync(appArgs);
-
-                // And exit our instance and stop
+                //app is already running! Exiting the application  
                 System.Diagnostics.Process.GetCurrentProcess().Kill();
                 return;
             }
 
-            // Otherwise, register for activation redirection
-            Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().Activated += App_Activated;
-
-            _MainWindow.Activate();
-        }
-
-        private void App_Activated(object sender, Microsoft.Windows.AppLifecycle.AppActivationArguments e)
-        {
-            _MainWindow.BringToForeground();
+            if (Settings.StartMinimized)
+            {
+                if (Settings.MinimizeToTray)
+                {
+                    _MainWindow.Hide();
+                }
+                else
+                {
+                    _MainWindow.Minimize();
+                }
+            }
+            else
+            {
+                _MainWindow.Activate();
+                _MainWindow.BringToForeground();
+            }
         }
     }
 }
