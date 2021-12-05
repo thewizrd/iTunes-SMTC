@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "iTunes.SMTC (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "iTunes.SMTC (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
