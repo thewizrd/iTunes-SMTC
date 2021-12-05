@@ -57,7 +57,7 @@ namespace iTunes.SMTC
         private string GetAppIcoPath()
         {
             var BaseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var AppIcoPath = System.IO.Path.Combine(BaseDir, @"Resources\App.ico");
+            var AppIcoPath = System.IO.Path.Combine(BaseDir, ICO_PATH);
             return AppIcoPath;
         }
     }

@@ -1,6 +1,7 @@
 ﻿using iTunes.SMTC.Utils;
 using iTunesLib;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -34,12 +35,17 @@ namespace iTunes.SMTC
     public sealed partial class MainWindow : Window
     {
         private bool disposedValue;
+        private const string ICO_PATH = @"Resources\App.ico";
 
         public MainWindow()
         {
             InitializeComponent();
-            this.Title = "iTunes MediaController Settings";
-            this.LoadIcon(@"Resources\App.ico");
+
+            Title = "iTunes MediaController Settings";
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+
+            this.LoadIcon(ICO_PATH);
             this.SetWindowSize(600, 600);
             this.CreateTaskBarIcon();
 
