@@ -60,6 +60,11 @@
                            Margin="0,5"
                            Style="{ThemeResource SettingTitleStyle}" />
                 <Rectangle Height="12" />
+                <TextBlock Style="{ThemeResource PrefTitleStyle}"
+                           Text="Show track notification" />
+                <StackPanel Padding="10,5" Orientation="Horizontal">
+                    <ToggleSwitch x:Name="TrackNotificationSwitch" />
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </Grid>

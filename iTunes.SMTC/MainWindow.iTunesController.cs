@@ -1,4 +1,5 @@
 ﻿using iTunesLib;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using System;
@@ -13,6 +14,7 @@ using Windows.Media;
 using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Windows.UI.Notifications;
 
 namespace iTunes.SMTC
 {
@@ -34,6 +36,7 @@ namespace iTunes.SMTC
 
         private StorageFolder ArtworkFolder;
         private StorageFile ArtworkFile;
+        private StorageFile ArtworkFileTemp;
 
         private void InitializeSMTC()
         {
@@ -78,12 +81,9 @@ namespace iTunes.SMTC
                     if (IsiTunesRunning())
                     {
                         // If running, check connection status
-                        if (_iTunesApp == null)
+                        if (_iTunesApp == null && !_delayStartTimer.Enabled)
                         {
-                            if (_delayStartTimer?.Enabled != true)
-                            {
-                                InitializeiTunes();
-                            }
+                            InitializeiTunes();
                         }
 
                         // Update SMTC display
@@ -111,6 +111,11 @@ namespace iTunes.SMTC
                                     _isPlaying = isPlaying;
                                     await SaveArtwork(currentTrack);
                                     UpdateSMTCDisplay(currentTrack);
+
+                                    if (_isPlaying && Settings.ShowTrackToast)
+                                    {
+                                        ShowToastNotification(currentTrack);
+                                    }
                                 }
                                 else if (_isPlaying != isPlaying)
                                 {
@@ -172,27 +177,17 @@ namespace iTunes.SMTC
             if (ArtworkFile == null)
             {
                 var folder = await GetArtworkFolder();
-                ArtworkFile = await folder.CreateFileAsync("artwork.img", CreationCollisionOption.OpenIfExists);
+                ArtworkFile = await folder.CreateFileAsync("artwork.img", CreationCollisionOption.ReplaceExisting);
+                ArtworkFileTemp = await folder.CreateFileAsync("artwork.img.tmp", CreationCollisionOption.ReplaceExisting);
             }
 
             return ArtworkFile;
         }
 
-        private static async Task ClearArtworkFile(StorageFile file)
-        {
-            try
-            {
-                await FileIO.WriteBytesAsync(file, Array.Empty<byte>());
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-            }
-        }
-
         private async Task SaveArtwork(IITTrack track)
         {
             var artworkFile = await GetDefaultArtworkFile();
+            var artworkTempFile = ArtworkFileTemp;
 
             if (track != null)
             {
@@ -202,17 +197,15 @@ namespace iTunes.SMTC
                     var artwork = artworks.FirstOrDefault();
                     if (artwork != null)
                     {
-                        artwork.SaveArtworkToFile(artworkFile.Path);
+                        // Save artwork to temp file first; then copy to file
+                        artwork.SaveArtworkToFile(artworkTempFile.Path);
+                        await artworkTempFile.CopyAndReplaceAsync(artworkFile);
                     }
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex);
                 }
-            }
-            else
-            {
-                await ClearArtworkFile(artworkFile);
             }
         }
 
@@ -328,7 +321,7 @@ namespace iTunes.SMTC
                 if (wasAlive)
                 {
                     Debug.WriteLine("Starting disconnect delay...");
-                    System.Threading.Thread.Sleep(5000); // 5s
+                    System.Threading.Thread.Sleep(10000); // 10s
                     Debug.WriteLine("Ended disconnect delay...");
 
                     // NOTE: if the scripting popup appears, iTunes will close in 30s
@@ -409,6 +402,11 @@ namespace iTunes.SMTC
                 {
                     _isPlaying = isPlaying;
                     UpdateSMTCPlaybackState(track);
+                }
+
+                if (Settings.ShowTrackToast)
+                {
+                    ShowToastNotification(track);
                 }
 
                 _currentTrack = track;
@@ -519,6 +517,30 @@ namespace iTunes.SMTC
             Process[] iTunesProcesses = Process.GetProcessesByName("iTunes");
 
             return iTunesProcesses.Length > 0;
+        }
+
+        private void ShowToastNotification(IITTrack track)
+        {
+            if (track != null)
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    new ToastContentBuilder()
+                        .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
+                        .AddText(track.Artist, AdaptiveTextStyle.Body, hintMaxLines: 1)
+                        .AddText(track.Album, AdaptiveTextStyle.Body, hintMaxLines: 1)
+                        .AddAppLogoOverride(new Uri(ArtworkFile.Path))
+                        .AddAudio(null, silent: true) // Disable sound
+                        .Show(async (t) =>
+                        {
+                            t.ExpirationTime = DateTimeOffset.Now.AddSeconds(5);
+                            t.Tag = t.Content.GetHashCode().ToString();
+
+                            await Task.Delay(5000);
+                            ToastNotificationManager.History.Remove(t.Tag);
+                        });
+                });
+            }
         }
     }
 }

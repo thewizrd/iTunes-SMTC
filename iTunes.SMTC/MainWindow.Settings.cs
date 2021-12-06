@@ -11,6 +11,13 @@ namespace iTunes.SMTC
     {
         private void InitializeSettings()
         {
+            TrackNotificationSwitch.IsOn = Settings.ShowTrackToast;
+            TrackNotificationSwitch.Toggled += TrackNotificationSwitch_Toggled;
+        }
+
+        private void TrackNotificationSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            Settings.ShowTrackToast = !Settings.ShowTrackToast;
         }
     }
 }
