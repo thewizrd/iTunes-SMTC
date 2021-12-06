@@ -33,7 +33,7 @@ namespace iTunes.SMTC
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainWindow : Window
+    public sealed partial class MainWindow : Window, IDisposable
     {
         private bool disposedValue;
         private const string ICO_PATH = @"Resources\App.ico";

@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -34,9 +35,7 @@ namespace iTunes.SMTC
         private Timer _statusTimer;
         private Timer _delayStartTimer;
 
-        private StorageFolder ArtworkFolder;
-        private StorageFile ArtworkFile;
-        private StorageFile ArtworkFileTemp;
+        private Uri _artworkUri;
 
         private void InitializeSMTC()
         {
@@ -54,12 +53,6 @@ namespace iTunes.SMTC
 
         private void InitializeiTunesController()
         {
-            iTunesDispatcher.TryEnqueue(async () =>
-            {
-                // Create Artwork folder
-                await GetArtworkFolder();
-            });
-
             _delayStartTimer = new Timer()
             {
                 AutoReset = false,
@@ -88,7 +81,7 @@ namespace iTunes.SMTC
 
                         // Update SMTC display
                         // NOTE: Needed as the iTunes OnPlayerPlayEvent does not always fire
-                        iTunesDispatcher.TryEnqueue(async () =>
+                        iTunesDispatcher.TryEnqueue(() =>
                         {
                             try
                             {
@@ -109,7 +102,7 @@ namespace iTunes.SMTC
                                 else if (_currentTrack == null || _currentTrack.TrackDatabaseID != currentTrack?.TrackDatabaseID)
                                 {
                                     _isPlaying = isPlaying;
-                                    await SaveArtwork(currentTrack);
+                                    SaveArtwork(currentTrack);
                                     UpdateSMTCDisplay(currentTrack);
 
                                     if (_isPlaying && Settings.ShowTrackToast)
@@ -162,32 +155,24 @@ namespace iTunes.SMTC
             InitializeControls(_iTunesApp?.CurrentTrack);
         }
 
-        private async Task<StorageFolder> GetArtworkFolder()
+        private void SaveArtwork(IITTrack track)
         {
-            if (ArtworkFolder == null)
+            if (_artworkUri == null)
             {
-                ArtworkFolder = await ApplicationData.Current.LocalCacheFolder.CreateFolderAsync("Artwork", CreationCollisionOption.OpenIfExists);
+#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
+                var BasePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);
+                var AppPath = Path.Combine(BasePath, "iTunes.SMTC");
+                Directory.CreateDirectory(AppPath);
+                var FilePath = Path.Combine(AppPath, "artwork.img");
+                _artworkUri = new Uri(FilePath);
+#else
+                var BaseFolder = ApplicationData.Current.LocalCacheFolder;
+                var ArtworkFolderPath = Path.Combine(BaseFolder.Path, "Artwork");
+                Directory.CreateDirectory(ArtworkFolderPath);
+                var ArtworkFilePath = Path.Combine(ArtworkFolderPath, "artwork.img");
+                _artworkUri = new Uri(ArtworkFilePath);
+#endif
             }
-
-            return ArtworkFolder;
-        }
-
-        private async Task<StorageFile> GetDefaultArtworkFile()
-        {
-            if (ArtworkFile == null)
-            {
-                var folder = await GetArtworkFolder();
-                ArtworkFile = await folder.CreateFileAsync("artwork.img", CreationCollisionOption.ReplaceExisting);
-                ArtworkFileTemp = await folder.CreateFileAsync("artwork.img.tmp", CreationCollisionOption.ReplaceExisting);
-            }
-
-            return ArtworkFile;
-        }
-
-        private async Task SaveArtwork(IITTrack track)
-        {
-            var artworkFile = await GetDefaultArtworkFile();
-            var artworkTempFile = ArtworkFileTemp;
 
             if (track != null)
             {
@@ -197,9 +182,8 @@ namespace iTunes.SMTC
                     var artwork = artworks.FirstOrDefault();
                     if (artwork != null)
                     {
-                        // Save artwork to temp file first; then copy to file
-                        artwork.SaveArtworkToFile(artworkTempFile.Path);
-                        await artworkTempFile.CopyAndReplaceAsync(artworkFile);
+                        // Save artwork to file
+                        artwork.SaveArtworkToFile(_artworkUri.LocalPath);
                     }
                 }
                 catch (Exception ex)
@@ -337,7 +321,7 @@ namespace iTunes.SMTC
 
         private void InitializeControls(IITTrack currentTrack)
         {
-            iTunesDispatcher.TryEnqueue(async () =>
+            iTunesDispatcher.TryEnqueue(() =>
             {
                 _statusTimer?.Stop();
 
@@ -345,7 +329,7 @@ namespace iTunes.SMTC
 
                 _isPlaying = currentTrack != null && playerState == ITPlayerState.ITPlayerStatePlaying;
 
-                await SaveArtwork(currentTrack);
+                SaveArtwork(currentTrack);
                 UpdateSMTCDisplay(currentTrack);
 
                 _currentTrack = currentTrack;
@@ -356,7 +340,7 @@ namespace iTunes.SMTC
 
         private void _iTunesApp_OnPlayerStopEvent(object iTrack)
         {
-            iTunesDispatcher.TryEnqueue(async () =>
+            iTunesDispatcher.TryEnqueue(() =>
             {
                 _statusTimer?.Stop();
 
@@ -367,7 +351,7 @@ namespace iTunes.SMTC
                 if (_currentTrack == null || _currentTrack.TrackDatabaseID != track?.TrackDatabaseID)
                 {
                     _isPlaying = isPlaying;
-                    await SaveArtwork(track);
+                    SaveArtwork(track);
                     UpdateSMTCDisplay(track);
                 }
                 else if (_isPlaying != isPlaying)
@@ -384,7 +368,7 @@ namespace iTunes.SMTC
 
         private void _iTunesApp_OnPlayerPlayEvent(object iTrack)
         {
-            iTunesDispatcher.TryEnqueue(async () =>
+            iTunesDispatcher.TryEnqueue(() =>
             {
                 _statusTimer?.Stop();
 
@@ -395,7 +379,7 @@ namespace iTunes.SMTC
                 if (_currentTrack == null || _currentTrack.TrackDatabaseID != track?.TrackDatabaseID)
                 {
                     _isPlaying = isPlaying;
-                    await SaveArtwork(track);
+                    SaveArtwork(track);
                     UpdateSMTCDisplay(track);
                 }
                 else if (_isPlaying != isPlaying)
@@ -477,7 +461,7 @@ namespace iTunes.SMTC
                     updater.MusicProperties.AlbumTitle = currentTrack?.Album;
                     updater.MusicProperties.Title = currentTrack?.Name;
 
-                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await GetDefaultArtworkFile());
+                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
 
                     _metadataEmpty = false;
                 }
@@ -529,7 +513,7 @@ namespace iTunes.SMTC
                         .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
                         .AddText(track.Artist, AdaptiveTextStyle.Body, hintMaxLines: 1)
                         .AddText(track.Album, AdaptiveTextStyle.Body, hintMaxLines: 1)
-                        .AddAppLogoOverride(new Uri(ArtworkFile.Path))
+                        .AddAppLogoOverride(_artworkUri)
                         .AddAudio(null, silent: true) // Disable sound
                         .Show(async (t) =>
                         {
@@ -537,7 +521,7 @@ namespace iTunes.SMTC
                             t.Tag = t.Content.GetHashCode().ToString();
 
                             await Task.Delay(5000);
-                            ToastNotificationManager.History.Remove(t.Tag);
+                            ToastNotificationManagerCompat.History.Remove(t.Tag);
                         });
                 });
             }

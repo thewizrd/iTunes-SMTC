@@ -54,6 +54,10 @@ namespace iTunes.SMTC
         public App()
         {
             this.InitializeComponent();
+
+#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
+            AppSettings.Default.Upgrade();
+#endif
         }
 
         /// <summary>
