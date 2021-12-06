@@ -60,16 +60,6 @@
                            Margin="0,5"
                            Style="{ThemeResource SettingTitleStyle}" />
                 <Rectangle Height="12" />
-                <TextBlock Style="{ThemeResource PrefTitleStyle}"
-                           Text="Start minimized" />
-                <StackPanel Padding="10,5" Orientation="Horizontal">
-                    <ToggleSwitch x:Name="StartMinimizedSwitch" />
-                </StackPanel>
-                <TextBlock Style="{ThemeResource PrefTitleStyle}"
-                           Text="Minimize to tray" />
-                <StackPanel Padding="10,5" Orientation="Horizontal">
-                    <ToggleSwitch x:Name="MinimizeToTraySwitch" />
-                </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </Grid>

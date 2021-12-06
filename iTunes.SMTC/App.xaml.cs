@@ -74,22 +74,8 @@ namespace iTunes.SMTC
                 return;
             }
 
-            if (Settings.StartMinimized)
-            {
-                if (Settings.MinimizeToTray)
-                {
-                    _MainWindow.Hide();
-                }
-                else
-                {
-                    _MainWindow.Minimize();
-                }
-            }
-            else
-            {
-                _MainWindow.Activate();
-                _MainWindow.BringToForeground();
-            }
+            // Start app with window hidden
+            _MainWindow.Hide();
         }
     }
 }

@@ -21,7 +21,7 @@ namespace iTunes.SMTC
                 taskbarIcon = new TaskbarIcon()
                 {
                     Icon = System.Drawing.Icon.ExtractAssociatedIcon(GetAppIcoPath()),
-                    ToolTipText = "iTunes MediaController"
+                    ToolTipText = "iTunes Media Controller"
                 };
                 taskbarIcon.TrayMouseDoubleClick += (s, e) =>
                 {
@@ -51,8 +51,6 @@ namespace iTunes.SMTC
                 ctxMenu.Items.Add(quitMenuItem);
 
                 taskbarIcon.ContextMenu = ctxMenu;
-
-                taskbarIcon.Visibility = Settings.MinimizeToTray ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             }
         }
 

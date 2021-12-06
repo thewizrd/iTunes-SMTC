@@ -75,12 +75,9 @@ namespace iTunes.SMTC
         // Override closing event
         private void _AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
         {
-            // Disable closing application
-            if (Settings.MinimizeToTray)
-            {
-                args.Cancel = true;
-                this.Hide();
-            }
+            // Disable closing application; hide to tray area
+            args.Cancel = true;
+            this.Hide();
         }
 
         private void MainAppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
