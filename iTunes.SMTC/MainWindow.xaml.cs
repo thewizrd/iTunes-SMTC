@@ -53,7 +53,7 @@ namespace iTunes.SMTC
             _AppWindow = this.GetAppWindow();
             // Disable resizing and remove min/max window buttons
             _AppWindow.SetPresenter(AppWindowPresenterKind.CompactOverlay);
-            _AppWindow.Resize(new Windows.Graphics.SizeInt32(480, 360));
+            //_AppWindow.Resize(new Windows.Graphics.SizeInt32(480, 360));
             this.PlacementCenterWindowInMonitorWin32();
             // Setup titlebar
             _AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
