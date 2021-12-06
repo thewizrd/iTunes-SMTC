@@ -68,11 +68,8 @@ namespace iTunes.SMTC
             iTunesDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
             iTunesDispatcher = iTunesDispatcherCtrl.DispatcherQueue;
 
-            InitializeITunes();
             InitializeSMTC();
-            IntializeEvents();
-
-            InitializeControls(_iTunesApp.CurrentTrack);
+            InitializeiTunesController();
         }
 
         // Override closing event
@@ -120,14 +117,6 @@ namespace iTunes.SMTC
             appWindow.TitleBar.SetDragRectangles(dragRects.Append(dragRect).ToArray());
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (disposedValue)
-            {
-                throw new ObjectDisposedException(typeof(iTunesApp).FullName);
-            }
-        }
-
         private void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -147,6 +136,13 @@ namespace iTunes.SMTC
                         _mediaPlayer.Dispose();
                         _mediaPlayer = null;
                     }
+                    _delayStartTimer?.Stop();
+                    _statusTimer?.Stop();
+
+                    _delayStartTimer?.Dispose();
+                    _statusTimer?.Dispose();
+
+                    iTunesDispatcherCtrl.ShutdownQueueAsync();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
