@@ -9,8 +9,8 @@
 
   <Identity
     Name="cb59b8b2-4430-4ba1-b582-d5276f542837"
-    Publisher="CN=bryan"
-    Version="1.0.0.0" />
+    Publisher="CN=Dave Antoine"
+    Version="1.0.1.0" />
 
   <Properties>
     <DisplayName>iTunes.SMTC</DisplayName>
