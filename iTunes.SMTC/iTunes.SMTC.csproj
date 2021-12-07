@@ -5,47 +5,29 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>iTunes.SMTC</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64;arm64</Platforms>
-    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
-    <PublishProfile>win10-$(Platform).pubxml</PublishProfile>
+    <Platforms>x86;x64</Platforms>
+    <RuntimeIdentifiers>win10-x86;win10-x64</RuntimeIdentifiers>
+	<PublishProfile Condition="'$(Configuration)' == 'UnpackagedDebug' Or '$(Configuration)' == 'UnpackagedRelease'">win10-unpackaged-$(Platform).pubxml</PublishProfile>
+	<PublishProfile Condition="'$(Configuration)' != 'UnpackagedDebug' And '$(Configuration)' != 'UnpackagedRelease'">win10-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
-    <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ApplicationIcon>Assets\App_unpackaged.ico</ApplicationIcon>
-    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-    <PackageCertificateThumbprint>FE77981BD3D3705FECC67C9BFE9FC1DDC05765CF</PackageCertificateThumbprint>
-    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
-    <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
-    <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Never</AppxBundle>
-    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <AppxPackageDir>AppPackages\</AppxPackageDir>
+    <ApplicationIcon>Resources\App_unpackaged.ico</ApplicationIcon>
     <Configurations>Debug;Release;UnpackagedDebug;UnpackagedRelease</Configurations>
     <Authors>Dave Antoine</Authors>
     <Nullable>disable</Nullable>
-    <PackageIcon>Square44x44Logo.altform-lightunplated_targetsize-256.png</PackageIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='UnpackagedRelease|x86'">
-    <Optimize>True</Optimize>
+      <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='UnpackagedRelease|x64'">
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='UnpackagedRelease|arm64'">
-    <Optimize>True</Optimize>
+	  <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\SplashScreen.scale-200.png" />
-    <Content Include="Assets\LockScreenLogo.scale-200.png" />
-    <Content Include="Assets\Square150x150Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
 	  <Content Include="Resources\App.ico">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Resources\App_unpackaged.ico">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </Content>
   </ItemGroup>
 
@@ -58,29 +40,12 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!-- Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
-       Tools extension to be activated for this project even if the Windows App SDK Nuget
-       package has not yet been restored -->
-  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnablePreviewMsixTooling)'=='true'">
-    <ProjectCapability Include="Msix" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Reference\" />
-  </ItemGroup>
-  <ItemGroup>
+	<ItemGroup>
+		<Folder Include="Reference\" />
+	</ItemGroup>
+	<ItemGroup>
     <Reference Include="Interop.iTunesLib, Version=1.13.0.0, Culture=neutral, processorArchitecture=MSIL">
         <HintPath>Reference\Interop.iTunesLib.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Update="Assets\App_unpackaged.ico">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="Assets\Square44x44Logo.altform-lightunplated_targetsize-256.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
   </ItemGroup>
 </Project>

@@ -23,6 +23,7 @@ namespace iTunes.SMTC
 #endif
         }
 
+#if DEBUG || RELEASE
         private async void StartupSwitch_Toggled(object sender, RoutedEventArgs e)
         {
             var oldValue = Settings.OpenOnStartup;
@@ -41,6 +42,7 @@ namespace iTunes.SMTC
 
             Settings.OpenOnStartup = newValue;
         }
+#endif
 
         private void TrackNotificationSwitch_Toggled(object sender, RoutedEventArgs e)
         {

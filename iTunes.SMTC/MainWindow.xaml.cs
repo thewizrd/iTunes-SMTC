@@ -36,7 +36,11 @@ namespace iTunes.SMTC
     public sealed partial class MainWindow : Window, IDisposable
     {
         private bool disposedValue;
+#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
         private const string ICO_PATH = @"Resources\App.ico";
+#else
+        private const string ICO_PATH = @"..\Resources\App.ico";
+#endif
 
         private AppWindow _AppWindow;
 

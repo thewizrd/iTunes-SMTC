@@ -6,12 +6,13 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
-  IgnorableNamespaces="uap rescap uap3">
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  IgnorableNamespaces="uap rescap uap3 uap5 mp">
 
   <Identity
-    Name="cb59b8b2-4430-4ba1-b582-d5276f542837"
+    Name="49586DaveAntoine.MediaControllerforiTunes"
     Publisher="CN=Dave Antoine"
-    Version="1.0.0.0" />
+    Version="1.0.9.0" />
 
   <Properties>
     <DisplayName>Media Controller for iTunes</DisplayName>
@@ -41,22 +42,24 @@
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
-      <Extensions>
-		  <uap5:Extension
-			  Category="windows.startupTask"
-			  Executable="iTunes.SMTC.exe"
-			  EntryPoint="Windows.FullTrustApplication">
-			  <uap5:StartupTask
-				TaskId="iTunes.SMTC"
-				Enabled="false"
-				DisplayName="Media Controller for iTunes" />
-		  </uap5:Extension>
-      </Extensions>
-    </Application>
+        <Extensions>
+	        <uap5:Extension
+		        Category="windows.startupTask"
+		        Executable="iTunes.SMTC\iTunes.SMTC.exe"
+		        EntryPoint="Windows.FullTrustApplication">
+		        <uap5:StartupTask
+			        TaskId="iTunes.SMTC"
+			        Enabled="false"
+			        DisplayName="Media Controller for iTunes" />
+	        </uap5:Extension>
+        </Extensions>
+	</Application>
   </Applications>
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
     <uap3:Capability Name="backgroundMediaPlayback"/>
   </Capabilities>
+
+  <mp:PhoneIdentity PhoneProductId="b77b2388-36e6-4206-944c-f276edb5db14" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 </Package>
