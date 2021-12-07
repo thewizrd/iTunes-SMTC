@@ -24,8 +24,11 @@ namespace iTunes.SMTC
 #else
         private static readonly ApplicationDataContainer LocalSettings = ApplicationData.Current.LocalSettings;
 
+        public static bool OpenOnStartup { get { return GetOpenOnStartup(); } set { SetOpenOnStartup(value); } }
+
         #region Settings Keys
         private const string KEY_SHOWTRACKTOAST = "key_showtracktoast";
+        private const string KEY_OPENONSTARTUP = "key_openonstartup";
         #endregion Settings Keys
 
         private static bool GetShowTrackToast()
@@ -41,6 +44,21 @@ namespace iTunes.SMTC
         private static void SetShowTrackToast(bool value)
         {
             LocalSettings.Values[KEY_SHOWTRACKTOAST] = value;
+        }
+
+        private static bool GetOpenOnStartup()
+        {
+            if (LocalSettings.Values.TryGetValue(KEY_OPENONSTARTUP, out object value))
+            {
+                return (bool)value;
+            }
+
+            return false;
+        }
+
+        private static void SetOpenOnStartup(bool value)
+        {
+            LocalSettings.Values[KEY_OPENONSTARTUP] = value;
         }
 #endif
     }

@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+#if DEBUG || RELEASE
+using Windows.ApplicationModel;
+#endif
 
 namespace iTunes.SMTC
 {
@@ -13,6 +16,30 @@ namespace iTunes.SMTC
         {
             TrackNotificationSwitch.IsOn = Settings.ShowTrackToast;
             TrackNotificationSwitch.Toggled += TrackNotificationSwitch_Toggled;
+#if DEBUG || RELEASE
+            StartupSwitch.Visibility = Visibility.Visible;
+            StartupSwitch.IsOn = Settings.OpenOnStartup;
+            StartupSwitch.Toggled += StartupSwitch_Toggled;
+#endif
+        }
+
+        private async void StartupSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            var oldValue = Settings.OpenOnStartup;
+            var newValue = !oldValue;
+
+            StartupTask startupTask = await StartupTask.GetAsync("iTunes.SMTC");
+
+            if (newValue)
+            {
+                await startupTask.RequestEnableAsync();
+            }
+            else
+            {
+                startupTask.Disable();
+            }
+
+            Settings.OpenOnStartup = newValue;
         }
 
         private void TrackNotificationSwitch_Toggled(object sender, RoutedEventArgs e)

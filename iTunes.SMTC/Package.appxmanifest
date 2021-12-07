@@ -5,16 +5,17 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   IgnorableNamespaces="uap rescap uap3">
 
   <Identity
     Name="cb59b8b2-4430-4ba1-b582-d5276f542837"
     Publisher="CN=Dave Antoine"
-    Version="1.0.1.0" />
+    Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>iTunes.SMTC</DisplayName>
-    <PublisherDisplayName>bryan</PublisherDisplayName>
+    <DisplayName>Media Controller for iTunes</DisplayName>
+    <PublisherDisplayName>Dave Antoine</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -32,7 +33,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Media Notifier for iTunes"
+        DisplayName="Media Controller for iTunes"
         Description="Integrates iTunes with Windows 10/11 system media controls"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
@@ -40,6 +41,17 @@
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+      <Extensions>
+		  <uap5:Extension
+			  Category="windows.startupTask"
+			  Executable="iTunes.SMTC.exe"
+			  EntryPoint="Windows.FullTrustApplication">
+			  <uap5:StartupTask
+				TaskId="iTunes.SMTC"
+				Enabled="false"
+				DisplayName="Media Controller for iTunes" />
+		  </uap5:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

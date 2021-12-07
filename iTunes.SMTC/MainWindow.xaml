@@ -65,6 +65,13 @@
                 <StackPanel Padding="10,5" Orientation="Horizontal">
                     <ToggleSwitch x:Name="TrackNotificationSwitch" />
                 </StackPanel>
+                <TextBlock Style="{ThemeResource PrefTitleStyle}"
+                           Text="Run app on startup"
+                           Visibility="{Binding ElementName=StartupSwitch, Path=Visibility, Mode=OneWay}"/>
+                <StackPanel Padding="10,5" Orientation="Horizontal"
+                            Visibility="{Binding ElementName=StartupSwitch, Path=Visibility, Mode=OneWay}">
+                    <ToggleSwitch x:Name="StartupSwitch" Visibility="Collapsed" />
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </Grid>
