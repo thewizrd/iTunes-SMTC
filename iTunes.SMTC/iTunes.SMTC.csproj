@@ -1,51 +1,59 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>iTunes.SMTC</RootNamespace>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64</Platforms>
-    <RuntimeIdentifiers>win10-x86;win10-x64</RuntimeIdentifiers>
-	<PublishProfile Condition="'$(Configuration)' == 'UnpackagedDebug' Or '$(Configuration)' == 'UnpackagedRelease'">win10-unpackaged-$(Platform).pubxml</PublishProfile>
-	<PublishProfile Condition="'$(Configuration)' != 'UnpackagedDebug' And '$(Configuration)' != 'UnpackagedRelease'">win10-$(Platform).pubxml</PublishProfile>
-    <UseWinUI>true</UseWinUI>
-    <ApplicationIcon>Resources\App_unpackaged.ico</ApplicationIcon>
-    <Configurations>Debug;Release;UnpackagedDebug;UnpackagedRelease</Configurations>
-    <Authors>Dave Antoine</Authors>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='UnpackagedRelease|x86'">
-      <Optimize>True</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='UnpackagedRelease|x64'">
-	  <Optimize>True</Optimize>
-  </PropertyGroup>
 
-  <ItemGroup>
-	  <Content Include="Resources\App.ico">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="Resources\App_unpackaged.ico">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="1.1.0" />
-    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.2" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22000.196" />
-    <PackageReference Include="PInvoke.User32" Version="0.7.104" />
-    <Manifest Include="$(ApplicationManifest)" />
-  </ItemGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net6.0-windows10.0.17763.0</TargetFramework>
+		<Platforms>x86;x64</Platforms>
+		<RuntimeIdentifiers>win10-x86;win10-x64</RuntimeIdentifiers>
+		<Nullable>disable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
+		<Configurations>Debug;Release;UnpackagedDebug;UnpackagedRelease</Configurations>
+		<AssemblyVersion></AssemblyVersion>
+		<Version>1.0.12.0</Version>
+		<FileVersion></FileVersion>
+		<Company>Dave Antoine</Company>
+	</PropertyGroup>
 
 	<ItemGroup>
-		<Folder Include="Reference\" />
+	  <Content Include="Resources\app.ico" />
 	</ItemGroup>
+
 	<ItemGroup>
-    <Reference Include="Interop.iTunesLib, Version=1.13.0.0, Culture=neutral, processorArchitecture=MSIL">
-        <HintPath>Reference\Interop.iTunesLib.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.2" />
+		<PackageReference Include="PInvoke.User32" Version="0.7.104" />
+		<PackageReference Include="TaskScheduler" Version="2.9.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="Interop.iTunesLib">
+			<HintPath>Reference\Interop.iTunesLib.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Properties\Settings.Designer.cs">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
+		<Compile Update="SettingsUi.iTunesController.cs">
+			<DependentUpon>SettingsUi.cs</DependentUpon>
+		</Compile>
+		<Compile Update="SettingsUi.Settings.cs">
+			<DependentUpon>SettingsUi.cs</DependentUpon>
+		</Compile>
+		<Compile Update="SettingsUi.TaskbarIcon.cs">
+			<DependentUpon>SettingsUi.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Properties\Settings.settings">
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
+	</ItemGroup>
+
 </Project>

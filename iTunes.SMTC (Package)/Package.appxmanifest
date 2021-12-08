@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  IgnorableNamespaces="uap rescap uap3 uap5 mp">
+
+	<Identity
+	  Name="49586DaveAntoine.MediaControllerforiTunes"
+	  Publisher="CN=FC137F73-0421-4275-8C89-E761F4D1BC3D"
+	  Version="1.0.12.0" />
+
+	<Properties>
+		<DisplayName>Media Controller for iTunes</DisplayName>
+		<PublisherDisplayName>Dave Antoine</PublisherDisplayName>
+		<Logo>Assets\StoreLogo.png</Logo>
+	</Properties>
+
+	<Dependencies>
+		<TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
+		<TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14393.0" MaxVersionTested="10.0.14393.0" />
+	</Dependencies>
+
+	<Resources>
+		<Resource Language="x-generate"/>
+	</Resources>
+
+	<Applications>
+		<Application Id="App"
+		  Executable="$targetnametoken$.exe"
+		  EntryPoint="$targetentrypoint$">
+			<uap:VisualElements
+			  DisplayName="Media Controller for iTunes"
+			  Description="Integrates iTunes with Windows 10/11 system media controls"
+			  BackgroundColor="transparent"
+			  Square150x150Logo="Assets\Square150x150Logo.png"
+			  Square44x44Logo="Assets\Square44x44Logo.png">
+				<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
+				<uap:SplashScreen Image="Assets\SplashScreen.png" />
+			</uap:VisualElements>
+			<Extensions>
+				<uap5:Extension
+					Category="windows.startupTask"
+					Executable="iTunes.SMTC\iTunes.SMTC.exe"
+					EntryPoint="Windows.FullTrustApplication">
+					<uap5:StartupTask
+						TaskId="iTunes.SMTC"
+						Enabled="false"
+						DisplayName="Media Controller for iTunes" />
+				</uap5:Extension>
+			</Extensions>
+		</Application>
+	</Applications>
+
+	<Capabilities>
+		<rescap:Capability Name="runFullTrust" />
+		<uap3:Capability Name="backgroundMediaPlayback"/>
+	</Capabilities>
+
+	<mp:PhoneIdentity PhoneProductId="b77b2388-36e6-4206-944c-f276edb5db14" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+</Package>

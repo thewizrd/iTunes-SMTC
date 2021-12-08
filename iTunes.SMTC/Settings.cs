@@ -3,28 +3,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+#if DEBUG || RELEASE
 using Windows.Storage;
+#endif
 
 namespace iTunes.SMTC
 {
     public static class Settings
     {
         public static bool ShowTrackToast { get { return GetShowTrackToast(); } set { SetShowTrackToast(value); } }
+        public static bool OpenOnStartup { get { return GetOpenOnStartup(); } set { SetOpenOnStartup(value); } }
 
 #if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
         private static bool GetShowTrackToast()
         {
-            return AppSettings.Default.ShowTrackToast;
+            return Properties.Settings.Default.ShowTrackToast;
         }
 
         private static void SetShowTrackToast(bool value)
         {
-            AppSettings.Default.ShowTrackToast = value;
+            Properties.Settings.Default.ShowTrackToast = value;
+            Properties.Settings.Default.Save();
+        }
+
+        private static bool GetOpenOnStartup()
+        {
+            return Properties.Settings.Default.OpenOnStartup;
+        }
+
+        private static void SetOpenOnStartup(bool value)
+        {
+            Properties.Settings.Default.OpenOnStartup = value;
+            Properties.Settings.Default.Save();
         }
 #else
         private static readonly ApplicationDataContainer LocalSettings = ApplicationData.Current.LocalSettings;
-
-        public static bool OpenOnStartup { get { return GetOpenOnStartup(); } set { SetOpenOnStartup(value); } }
 
         #region Settings Keys
         private const string KEY_SHOWTRACKTOAST = "key_showtracktoast";
@@ -62,43 +75,4 @@ namespace iTunes.SMTC
         }
 #endif
     }
-
-#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
-    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
-    internal sealed partial class AppSettings : global::System.Configuration.ApplicationSettingsBase
-    {
-
-        private static AppSettings defaultInstance = ((AppSettings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new AppSettings())));
-
-        public static AppSettings Default
-        {
-            get
-            {
-                return defaultInstance;
-            }
-        }
-
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("false")]
-        public bool ShowTrackToast
-        {
-            get
-            {
-                return ((bool)(this["ShowTrackToast"]));
-            }
-            set
-            {
-                this["ShowTrackToast"] = value;
-                this.Save();
-            }
-        }
-
-        public override void Save()
-        {
-            base.Save();
-        }
-    }
-#endif
 }
