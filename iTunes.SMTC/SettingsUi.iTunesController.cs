@@ -20,6 +20,8 @@ namespace iTunes.SMTC
 {
     public partial class SettingsUi
     {
+        private const string NOTIF_TAG = "iTunes.SMTC";
+
         private iTunesApp _iTunesApp;
         private IITTrack _currentTrack;
         private bool _isPlaying = false;
@@ -460,7 +462,14 @@ namespace iTunes.SMTC
                     updater.MusicProperties.AlbumTitle = currentTrack?.Album;
                     updater.MusicProperties.Title = currentTrack?.Name;
 
-                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                    try
+                    {
+                        updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex);
+                    }
 
                     _metadataEmpty = false;
                 }
@@ -495,7 +504,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private bool IsiTunesRunning()
+        private static bool IsiTunesRunning()
         {
             Process[] iTunesProcesses = Process.GetProcessesByName("iTunes");
 
@@ -508,6 +517,8 @@ namespace iTunes.SMTC
             {
                 RunOnUIThread(() =>
                 {
+                    ToastNotificationManagerCompat.History.RemoveGroup(NOTIF_TAG);
+
                     new ToastContentBuilder()
                         .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
                         .AddText(track.Artist, AdaptiveTextStyle.Body, hintMaxLines: 1)
@@ -518,8 +529,10 @@ namespace iTunes.SMTC
                         {
                             t.ExpirationTime = DateTimeOffset.Now.AddSeconds(5);
                             t.Tag = t.Content.GetHashCode().ToString();
+                            t.Group = NOTIF_TAG;
 
-                            await Task.Delay(5000);
+                            await Task.Delay(6000);
+
                             ToastNotificationManagerCompat.History.Remove(t.Tag);
                         });
                 });
