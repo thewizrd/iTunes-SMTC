@@ -1,3 +1,6 @@
+using Microsoft.AppCenter;
+using Microsoft.AppCenter.Crashes;
+
 namespace iTunes.SMTC
 {
     internal static class Program
@@ -17,6 +20,7 @@ namespace iTunes.SMTC
             if (createdNew)
             {
                 ApplicationConfiguration.Initialize();
+                AppCenter.Start(Keys.AppCenterKey.GetSecret(), typeof(Crashes));
                 Application.Run(new SettingsUi());
             }
         }

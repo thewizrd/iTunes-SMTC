@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.AppCenter.Crashes;
+using Microsoft.UI.Xaml;
 #if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
 using Microsoft.Win32.TaskScheduler;
 #endif
@@ -35,6 +36,8 @@ namespace iTunes.SMTC
             TrackNotificationSwitch.CheckedChanged += TrackNotificationSwitch_CheckedChanged;
             StartupSwitch.Checked = Settings.OpenOnStartup;
             StartupSwitch.CheckedChanged += StartupSwitch_CheckedChanged;
+            CrashReportSwitch.Checked = Settings.EnableCrashReporting;
+            CrashReportSwitch.CheckedChanged += CrashReportSwitch_CheckedChanged;
         }
 
         private async void StartupSwitch_CheckedChanged(object sender, EventArgs e)
@@ -90,6 +93,12 @@ namespace iTunes.SMTC
         private void TrackNotificationSwitch_CheckedChanged(object sender, EventArgs e)
         {
             Settings.ShowTrackToast = !Settings.ShowTrackToast;
+        }
+
+        private async void CrashReportSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            var newValue = Settings.EnableCrashReporting = !Settings.EnableCrashReporting;
+            await Crashes.SetEnabledAsync(newValue);
         }
     }
 }

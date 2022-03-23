@@ -59,6 +59,7 @@
 	<Capabilities>
 		<rescap:Capability Name="runFullTrust" />
 		<uap3:Capability Name="backgroundMediaPlayback"/>
+		<Capability Name="internetClient"/>
 	</Capabilities>
 
 	<mp:PhoneIdentity PhoneProductId="b77b2388-36e6-4206-944c-f276edb5db14" PhonePublisherId="00000000-0000-0000-0000-000000000000" />

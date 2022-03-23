@@ -25,6 +25,7 @@
             this.OpenMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.QuitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.VersionCodeText = new System.Windows.Forms.Label();
+            this.CrashReportSwitch = new System.Windows.Forms.CheckBox();
             this.TaskbarIconCtxMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -95,7 +96,7 @@
             // VersionCodeText
             // 
             this.VersionCodeText.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.VersionCodeText.Location = new System.Drawing.Point(201, 139);
+            this.VersionCodeText.Location = new System.Drawing.Point(201, 154);
             this.VersionCodeText.Margin = new System.Windows.Forms.Padding(0);
             this.VersionCodeText.Name = "VersionCodeText";
             this.VersionCodeText.Size = new System.Drawing.Size(83, 23);
@@ -103,11 +104,23 @@
             this.VersionCodeText.Text = "v1.0.0.0";
             this.VersionCodeText.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
+            // CrashReportSwitch
+            // 
+            this.CrashReportSwitch.AutoSize = true;
+            this.CrashReportSwitch.Location = new System.Drawing.Point(19, 128);
+            this.CrashReportSwitch.Margin = new System.Windows.Forms.Padding(10, 5, 10, 5);
+            this.CrashReportSwitch.Name = "CrashReportSwitch";
+            this.CrashReportSwitch.Size = new System.Drawing.Size(144, 19);
+            this.CrashReportSwitch.TabIndex = 4;
+            this.CrashReportSwitch.Text = "Enable crash reporting";
+            this.CrashReportSwitch.UseVisualStyleBackColor = true;
+            // 
             // SettingsUi
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 161);
+            this.ClientSize = new System.Drawing.Size(284, 176);
+            this.Controls.Add(this.CrashReportSwitch);
             this.Controls.Add(this.VersionCodeText);
             this.Controls.Add(this.StartupSwitch);
             this.Controls.Add(this.FormTitle);
@@ -135,5 +148,6 @@
         private ToolStripMenuItem OpenMenuItem;
         private ToolStripMenuItem QuitMenuItem;
         private Label VersionCodeText;
+        private CheckBox CrashReportSwitch;
     }
 }
