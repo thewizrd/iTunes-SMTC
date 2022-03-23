@@ -1,4 +1,5 @@
 ﻿using iTunesLib;
+using Microsoft.AppCenter.Crashes;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System;
 using System.Collections.Generic;
@@ -189,7 +190,7 @@ namespace iTunes.SMTC
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(ex);
+                    Crashes.TrackError(ex);
                 }
             }
         }
@@ -468,7 +469,7 @@ namespace iTunes.SMTC
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine(ex);
+                        Crashes.TrackError(ex);
                     }
 
                     _metadataEmpty = false;
