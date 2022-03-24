@@ -39,6 +39,8 @@ namespace iTunes.SMTC
 
         private Uri _artworkUri;
 
+        private CancellationTokenSource cts = null;
+
         private void InitializeSMTC()
         {
             _mediaPlayer = new MediaPlayer();
@@ -512,13 +514,21 @@ namespace iTunes.SMTC
             return iTunesProcesses.Length > 0;
         }
 
+        private void ResetToken()
+        {
+            cts?.Cancel();
+            cts = new CancellationTokenSource();
+        }
+
         private void ShowToastNotification(IITTrack track)
         {
             if (track != null)
             {
+                ResetToken();
+
                 RunOnUIThread(() =>
                 {
-                    ToastNotificationManagerCompat.History.RemoveGroup(NOTIF_TAG);
+                    ToastNotificationManagerCompat.History.Remove(NOTIF_TAG);
 
                     new ToastContentBuilder()
                         .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
@@ -529,10 +539,13 @@ namespace iTunes.SMTC
                         .Show(async (t) =>
                         {
                             t.ExpirationTime = DateTimeOffset.Now.AddSeconds(5);
-                            t.Tag = t.Content.GetHashCode().ToString();
-                            t.Group = NOTIF_TAG;
+                            t.Tag = NOTIF_TAG;
 
-                            await Task.Delay(6000);
+                            try
+                            {
+                                await Task.Delay(5250, cts.Token);
+                            }
+                            catch (Exception) { }
 
                             ToastNotificationManagerCompat.History.Remove(t.Tag);
                         });
