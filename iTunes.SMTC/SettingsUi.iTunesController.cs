@@ -52,6 +52,8 @@ namespace iTunes.SMTC
             _systemMediaTransportControls.IsPlayEnabled = true;
             _systemMediaTransportControls.IsPreviousEnabled = true;
             _systemMediaTransportControls.IsStopEnabled = true;
+            _systemMediaTransportControls.IsRewindEnabled = true;
+            _systemMediaTransportControls.IsFastForwardEnabled = true;
             _systemMediaTransportControls.ButtonPressed += SystemControls_ButtonPressed;
         }
 
@@ -68,7 +70,7 @@ namespace iTunes.SMTC
                 AutoReset = true,
                 Interval = 1000
             };
-            _statusTimer.Elapsed += (s, e) => 
+            _statusTimer.Elapsed += (s, e) =>
             {
                 _statusTimer.Stop();
 
@@ -201,13 +203,29 @@ namespace iTunes.SMTC
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
+                var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
+                
                 switch (args.Button)
                 {
                     case SystemMediaTransportControlsButton.Play:
-                        _iTunesApp?.Play();
+                        if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
+                        {
+                            _iTunesApp?.Resume();
+                        }
+                        else
+                        {
+                            _iTunesApp?.Play();
+                        }
                         break;
                     case SystemMediaTransportControlsButton.Pause:
-                        _iTunesApp?.Pause();
+                        if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
+                        {
+                            _iTunesApp?.Resume();
+                        }
+                        else
+                        {
+                            _iTunesApp?.Pause();
+                        }
                         break;
                     case SystemMediaTransportControlsButton.Stop:
                         _iTunesApp?.Stop();
