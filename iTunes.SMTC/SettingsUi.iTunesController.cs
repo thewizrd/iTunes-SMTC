@@ -180,9 +180,9 @@ namespace iTunes.SMTC
 #endif
             }
 
-            if (track != null)
+            try
             {
-                try
+                if (track != null)
                 {
                     var artworks = track.Artwork.Cast<IITArtwork>();
                     var artwork = artworks.FirstOrDefault();
@@ -190,12 +190,16 @@ namespace iTunes.SMTC
                     {
                         // Save artwork to file
                         artwork.SaveArtworkToFile(_artworkUri.LocalPath);
+                        return;
                     }
                 }
-                catch (Exception ex)
-                {
-                    Crashes.TrackError(ex);
-                }
+
+                // Delete artwork or replace with empty
+                Properties.Resources.no_artwork.Save(_artworkUri.LocalPath);
+            }
+            catch (Exception ex)
+            {
+                Crashes.TrackError(ex);
             }
         }
 
