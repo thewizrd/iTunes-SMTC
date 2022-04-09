@@ -203,35 +203,19 @@ namespace iTunes.SMTC
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
-                var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
-                
                 switch (args.Button)
                 {
                     case SystemMediaTransportControlsButton.Play:
-                        if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
-                        {
-                            _iTunesApp?.Resume();
-                        }
-                        else
-                        {
-                            _iTunesApp?.Play();
-                        }
+                        _iTunesApp_PlayOrResume();
                         break;
                     case SystemMediaTransportControlsButton.Pause:
-                        if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
-                        {
-                            _iTunesApp?.Resume();
-                        }
-                        else
-                        {
-                            _iTunesApp?.Pause();
-                        }
+                        _iTunesApp_PauseOrResume();
                         break;
                     case SystemMediaTransportControlsButton.Stop:
                         _iTunesApp?.Stop();
                         break;
                     case SystemMediaTransportControlsButton.Previous:
-                        _iTunesApp?.PreviousTrack();
+                        _iTunesApp_PreviousTrack();
                         break;
                     case SystemMediaTransportControlsButton.Next:
                         _iTunesApp?.NextTrack();
@@ -244,6 +228,48 @@ namespace iTunes.SMTC
                         break;
                 }
             });
+        }
+
+        private void _iTunesApp_PlayOrResume()
+        {
+            var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
+
+            if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
+            {
+                _iTunesApp?.Resume();
+            }
+            else
+            {
+                _iTunesApp?.Play();
+            }
+        }
+
+        private void _iTunesApp_PauseOrResume()
+        {
+            var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
+
+            if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
+            {
+                _iTunesApp?.Resume();
+            }
+            else
+            {
+                _iTunesApp?.Pause();
+            }
+        }
+
+        private void _iTunesApp_PreviousTrack()
+        {
+            var playPosition = _iTunesApp?.PlayerPosition ?? 0;
+
+            if (playPosition <= 2)
+            {
+                _iTunesApp?.PreviousTrack();
+            }
+            else
+            {
+                _iTunesApp.PlayerPosition = 0;
+            }
         }
 
         private void IntializeEvents()
@@ -546,7 +572,11 @@ namespace iTunes.SMTC
 
                 RunOnUIThread(() =>
                 {
-                    ToastNotificationManagerCompat.History.Remove(NOTIF_TAG);
+                    try
+                    {
+                        ToastNotificationManagerCompat.History.Remove(NOTIF_TAG);
+                    }
+                    catch { }
 
                     new ToastContentBuilder()
                         .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
@@ -562,10 +592,10 @@ namespace iTunes.SMTC
                             try
                             {
                                 await Task.Delay(5250, cts.Token);
-                            }
-                            catch (Exception) { }
 
-                            ToastNotificationManagerCompat.History.Remove(t.Tag);
+                                ToastNotificationManagerCompat.History.Remove(t.Tag);
+                            }
+                            catch { }
                         });
                 });
             }
