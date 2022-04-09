@@ -497,7 +497,7 @@ namespace iTunes.SMTC
                         break;
                     case ITPlayerState.ITPlayerStateFastForward:
                     case ITPlayerState.ITPlayerStateRewind:
-                        _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Changing;
+                        _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                         break;
                 }
 
@@ -549,7 +549,7 @@ namespace iTunes.SMTC
                         break;
                     case ITPlayerState.ITPlayerStateFastForward:
                     case ITPlayerState.ITPlayerStateRewind:
-                        _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Changing;
+                        _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                         break;
                 }
             });
