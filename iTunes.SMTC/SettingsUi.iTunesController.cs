@@ -34,6 +34,7 @@ namespace iTunes.SMTC
         private DispatcherQueueController iTunesDispatcherCtrl;
         private DispatcherQueue iTunesDispatcher;
 
+        private DispatcherQueueTimer _timelineTimer;
         private Timer _statusTimer;
         private Timer _delayStartTimer;
 
@@ -54,7 +55,12 @@ namespace iTunes.SMTC
             _systemMediaTransportControls.IsStopEnabled = true;
             _systemMediaTransportControls.IsRewindEnabled = true;
             _systemMediaTransportControls.IsFastForwardEnabled = true;
+            _systemMediaTransportControls.ShuffleEnabled = false;
+            _systemMediaTransportControls.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
             _systemMediaTransportControls.ButtonPressed += SystemControls_ButtonPressed;
+            _systemMediaTransportControls.ShuffleEnabledChangeRequested += SystemControls_ShuffleEnabledChangeRequested;
+            _systemMediaTransportControls.AutoRepeatModeChangeRequested += SystemControls_AutoRepeatModeChangeRequested;
+            _systemMediaTransportControls.PlaybackPositionChangeRequested += SystemControls_PlaybackPositionChangeRequested;
         }
 
         private void InitializeiTunesController()
@@ -64,6 +70,19 @@ namespace iTunes.SMTC
                 AutoReset = false,
                 Interval = 35000
             };
+
+            _timelineTimer = iTunesDispatcher.CreateTimer();
+            _timelineTimer.Interval = TimeSpan.FromSeconds(1);
+            _timelineTimer.Tick += (s, e) =>
+            {
+                UpdateSMTCTimeline(_currentTrack);
+
+                if (!_isPlaying)
+                {
+                    s.Stop();
+                }
+            };
+            _timelineTimer.IsRepeating = true;
 
             _statusTimer = new Timer()
             {
@@ -123,6 +142,11 @@ namespace iTunes.SMTC
                                 }
 
                                 _currentTrack = currentTrack;
+
+                                if (_isPlaying && _timelineTimer?.IsRunning != true)
+                                {
+                                    _timelineTimer?.Start();
+                                }
                             }
                             catch (Exception)
                             {
@@ -143,7 +167,7 @@ namespace iTunes.SMTC
 
                     _statusTimer.Start();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     _statusTimer.Start();
                 }
@@ -219,7 +243,7 @@ namespace iTunes.SMTC
                         _iTunesApp?.Stop();
                         break;
                     case SystemMediaTransportControlsButton.Previous:
-                        _iTunesApp_PreviousTrack();
+                        _iTunesApp?.BackTrack();
                         break;
                     case SystemMediaTransportControlsButton.Next:
                         _iTunesApp?.NextTrack();
@@ -230,6 +254,71 @@ namespace iTunes.SMTC
                     case SystemMediaTransportControlsButton.FastForward:
                         _iTunesApp?.FastForward();
                         break;
+                }
+            });
+        }
+
+        private void SystemControls_ShuffleEnabledChangeRequested(SystemMediaTransportControls sender, ShuffleEnabledChangeRequestedEventArgs args)
+        {
+            iTunesDispatcher.TryEnqueue(() =>
+            {
+                if (_iTunesApp != null)
+                {
+                    var currentPlaylist = _iTunesApp.CurrentPlaylist;
+
+                    if (currentPlaylist != null && _iTunesApp.CanSetShuffle[currentPlaylist])
+                    {
+                        currentPlaylist.Shuffle = args.RequestedShuffleEnabled;
+                        sender.ShuffleEnabled = args.RequestedShuffleEnabled;
+                    }
+                    else
+                    {
+                        sender.ShuffleEnabled = false;
+                    }
+                }
+            });
+        }
+
+        private void SystemControls_AutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args)
+        {
+            iTunesDispatcher.TryEnqueue(() =>
+            {
+                if (_iTunesApp != null)
+                {
+                    var currentPlaylist = _iTunesApp.CurrentPlaylist;
+
+                    if (currentPlaylist != null && _iTunesApp.CanSetSongRepeat[currentPlaylist])
+                    {
+                        switch (args.RequestedAutoRepeatMode)
+                        {
+                            case MediaPlaybackAutoRepeatMode.None:
+                                currentPlaylist.SongRepeat = ITPlaylistRepeatMode.ITPlaylistRepeatModeOff;
+                                break;
+                            case MediaPlaybackAutoRepeatMode.Track:
+                                currentPlaylist.SongRepeat = ITPlaylistRepeatMode.ITPlaylistRepeatModeOne;
+                                break;
+                            case MediaPlaybackAutoRepeatMode.List:
+                                currentPlaylist.SongRepeat = ITPlaylistRepeatMode.ITPlaylistRepeatModeAll;
+                                break;
+                        }
+
+                        sender.AutoRepeatMode = args.RequestedAutoRepeatMode;
+                    }
+                    else
+                    {
+                        sender.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
+                    }
+                }
+            });
+        }
+
+        private void SystemControls_PlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
+        {
+            iTunesDispatcher.TryEnqueue(() =>
+            {
+                if (_iTunesApp != null)
+                {
+                    _iTunesApp.PlayerPosition = (int)args.RequestedPlaybackPosition.TotalSeconds;
                 }
             });
         }
@@ -259,20 +348,6 @@ namespace iTunes.SMTC
             else
             {
                 _iTunesApp?.Pause();
-            }
-        }
-
-        private void _iTunesApp_PreviousTrack()
-        {
-            var playPosition = _iTunesApp?.PlayerPosition ?? 0;
-
-            if (playPosition <= 2)
-            {
-                _iTunesApp?.PreviousTrack();
-            }
-            else
-            {
-                _iTunesApp.PlayerPosition = 0;
             }
         }
 
@@ -327,6 +402,7 @@ namespace iTunes.SMTC
                 Debug.WriteLine("Disconnecting...");
 
                 _statusTimer?.Stop();
+                _timelineTimer?.Stop();
 
                 var wasAlive = false;
 
@@ -383,10 +459,16 @@ namespace iTunes.SMTC
 
                 SaveArtwork(currentTrack);
                 UpdateSMTCDisplay(currentTrack);
+                UpdateSMTCTimeline(currentTrack);
 
                 _currentTrack = currentTrack;
 
                 _statusTimer?.Start();
+
+                if (_isPlaying)
+                {
+                    _timelineTimer?.Start();
+                }
             });
         }
 
@@ -395,6 +477,7 @@ namespace iTunes.SMTC
             iTunesDispatcher.TryEnqueue(() =>
             {
                 _statusTimer?.Stop();
+                _timelineTimer?.Stop();
 
                 var isPlaying = false;
 
@@ -423,6 +506,7 @@ namespace iTunes.SMTC
             iTunesDispatcher.TryEnqueue(() =>
             {
                 _statusTimer?.Stop();
+                _timelineTimer?.Stop();
 
                 var isPlaying = true;
 
@@ -448,6 +532,7 @@ namespace iTunes.SMTC
                 _currentTrack = track;
 
                 _statusTimer?.Start();
+                _timelineTimer?.Start();
             });
         }
 
@@ -483,10 +568,10 @@ namespace iTunes.SMTC
 
         private void UpdateSMTCDisplay(IITTrack currentTrack)
         {
-            var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
-
             RunOnUIThread(async () =>
             {
+                var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
+
                 switch (playerState)
                 {
                     case ITPlayerState.ITPlayerStateStopped:
@@ -503,15 +588,20 @@ namespace iTunes.SMTC
 
                 _systemMediaTransportControls.IsEnabled = currentTrack != null;
 
+                _systemMediaTransportControls.ShuffleEnabled = _iTunesApp?.CurrentPlaylist?.Shuffle ?? false;
+                _systemMediaTransportControls.AutoRepeatMode = GetRepeatModeFromITunes(_iTunesApp?.CurrentPlaylist?.SongRepeat) ?? MediaPlaybackAutoRepeatMode.None;
+
                 SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
                 updater.ClearAll();
 
                 if (currentTrack != null)
                 {
                     updater.Type = MediaPlaybackType.Music;
+                    updater.AppMediaId = currentTrack?.TrackDatabaseID.ToString();
                     updater.MusicProperties.Artist = currentTrack?.Artist;
                     updater.MusicProperties.AlbumTitle = currentTrack?.Album;
                     updater.MusicProperties.Title = currentTrack?.Name;
+                    updater.MusicProperties.TrackNumber = (uint) currentTrack?.TrackNumber;
 
                     try
                     {
@@ -535,10 +625,10 @@ namespace iTunes.SMTC
 
         private void UpdateSMTCPlaybackState(IITTrack currentTrack)
         {
-            var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
-
             RunOnUIThread(() =>
             {
+                var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
+
                 switch (playerState)
                 {
                     case ITPlayerState.ITPlayerStateStopped:
@@ -553,6 +643,38 @@ namespace iTunes.SMTC
                         break;
                 }
             });
+        }
+
+        private void UpdateSMTCTimeline(IITTrack currentTrack)
+        {
+            RunOnUIThread(() =>
+            {
+                // Update timeline
+                var timelineProperties = new SystemMediaTransportControlsTimelineProperties();
+
+                if (currentTrack != null)
+                {
+                    timelineProperties.StartTime = TimeSpan.FromSeconds(currentTrack.Start);
+                    timelineProperties.EndTime = TimeSpan.FromSeconds(currentTrack.Finish);
+                    timelineProperties.Position = TimeSpan.FromSeconds(_iTunesApp?.PlayerPosition ?? 0);
+
+                    timelineProperties.MinSeekTime = TimeSpan.FromSeconds(currentTrack.Start);
+                    timelineProperties.MaxSeekTime = TimeSpan.FromSeconds(currentTrack.Finish);
+                }
+
+                _systemMediaTransportControls.UpdateTimelineProperties(timelineProperties);
+            });
+        }
+
+        private static MediaPlaybackAutoRepeatMode? GetRepeatModeFromITunes(ITPlaylistRepeatMode? repeatMode)
+        {
+            return repeatMode switch
+            {
+                ITPlaylistRepeatMode.ITPlaylistRepeatModeOff => MediaPlaybackAutoRepeatMode.None,
+                ITPlaylistRepeatMode.ITPlaylistRepeatModeOne => MediaPlaybackAutoRepeatMode.Track,
+                ITPlaylistRepeatMode.ITPlaylistRepeatModeAll => MediaPlaybackAutoRepeatMode.List,
+                _ => null,
+            };
         }
 
         private static bool IsiTunesRunning()
