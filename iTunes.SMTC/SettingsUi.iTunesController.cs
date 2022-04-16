@@ -1,4 +1,6 @@
-﻿using iTunesLib;
+﻿using iTunes.SMTC.Extensions;
+using iTunes.SMTC.Model;
+using iTunesLib;
 using Microsoft.AppCenter.Crashes;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System;
@@ -24,7 +26,7 @@ namespace iTunes.SMTC
         private const string NOTIF_TAG = "iTunes.SMTC";
 
         private iTunesApp _iTunesApp;
-        private IITTrack _currentTrack;
+        private TrackMetadata _currentTrack;
         private bool _isPlaying = false;
 
         private MediaPlayer _mediaPlayer;
@@ -111,7 +113,7 @@ namespace iTunes.SMTC
                             try
                             {
                                 var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
-                                var currentTrack = _iTunesApp?.CurrentTrack;
+                                var currentTrack = _iTunesApp?.CurrentTrack?.GetMetadata();
 
                                 var isPlaying = currentTrack != null && playerState == ITPlayerState.ITPlayerStatePlaying;
 
@@ -124,7 +126,7 @@ namespace iTunes.SMTC
                                         UpdateSMTCDisplay(null);
                                     }
                                 }
-                                else if (_currentTrack == null || _currentTrack.TrackDatabaseID != currentTrack?.TrackDatabaseID)
+                                else if (_currentTrack == null || _currentTrack.DatabaseID != currentTrack?.DatabaseID)
                                 {
                                     _isPlaying = isPlaying;
                                     SaveArtwork(currentTrack);
@@ -182,10 +184,10 @@ namespace iTunes.SMTC
             _iTunesApp = new iTunesAppClass();
 
             IntializeEvents();
-            InitializeControls(_iTunesApp?.CurrentTrack);
+            InitializeControls(_iTunesApp?.CurrentTrack?.GetMetadata());
         }
 
-        private void SaveArtwork(IITTrack track)
+        private void SaveArtwork(TrackMetadata track)
         {
             if (_artworkUri == null)
             {
@@ -206,16 +208,11 @@ namespace iTunes.SMTC
 
             try
             {
-                if (track != null)
+                if (track?.Artwork != null)
                 {
-                    var artworks = track.Artwork.Cast<IITArtwork>();
-                    var artwork = artworks.FirstOrDefault();
-                    if (artwork != null)
-                    {
-                        // Save artwork to file
-                        artwork.SaveArtworkToFile(_artworkUri.LocalPath);
-                        return;
-                    }
+                    // Save artwork to file
+                    track.Artwork.SaveArtworkToFile(_artworkUri.LocalPath);
+                    return;
                 }
 
                 // Delete artwork or replace with empty
@@ -234,10 +231,10 @@ namespace iTunes.SMTC
                 switch (args.Button)
                 {
                     case SystemMediaTransportControlsButton.Play:
-                        _iTunesApp_PlayOrResume();
+                        _iTunesApp?.PlayOrResume();
                         break;
                     case SystemMediaTransportControlsButton.Pause:
-                        _iTunesApp_PauseOrResume();
+                        _iTunesApp?.PauseOrResume();
                         break;
                     case SystemMediaTransportControlsButton.Stop:
                         _iTunesApp?.Stop();
@@ -323,34 +320,6 @@ namespace iTunes.SMTC
             });
         }
 
-        private void _iTunesApp_PlayOrResume()
-        {
-            var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
-
-            if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
-            {
-                _iTunesApp?.Resume();
-            }
-            else
-            {
-                _iTunesApp?.Play();
-            }
-        }
-
-        private void _iTunesApp_PauseOrResume()
-        {
-            var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
-
-            if (playerState == ITPlayerState.ITPlayerStateRewind || playerState == ITPlayerState.ITPlayerStateFastForward)
-            {
-                _iTunesApp?.Resume();
-            }
-            else
-            {
-                _iTunesApp?.Pause();
-            }
-        }
-
         private void IntializeEvents()
         {
             if (_iTunesApp != null)
@@ -416,10 +385,6 @@ namespace iTunes.SMTC
                 }
                 _iTunesApp = null;
 
-                if (_currentTrack != null)
-                {
-                    Marshal.ReleaseComObject(_currentTrack);
-                }
                 _currentTrack = null;
 
                 _isPlaying = false;
@@ -447,7 +412,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private void InitializeControls(IITTrack currentTrack)
+        private void InitializeControls(TrackMetadata currentTrack)
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
@@ -481,9 +446,9 @@ namespace iTunes.SMTC
 
                 var isPlaying = false;
 
-                var track = GetCurrentTrack(iTrack);
+                var track = GetCurrentTrack(iTrack)?.GetMetadata();
 
-                if (_currentTrack == null || _currentTrack.TrackDatabaseID != track?.TrackDatabaseID)
+                if (_currentTrack == null || _currentTrack.DatabaseID != track?.DatabaseID)
                 {
                     _isPlaying = isPlaying;
                     SaveArtwork(track);
@@ -510,9 +475,9 @@ namespace iTunes.SMTC
 
                 var isPlaying = true;
 
-                var track = GetCurrentTrack(iTrack);
+                var track = GetCurrentTrack(iTrack)?.GetMetadata();
 
-                if (_currentTrack == null || _currentTrack.TrackDatabaseID != track?.TrackDatabaseID)
+                if (_currentTrack == null || _currentTrack.DatabaseID != track?.DatabaseID)
                 {
                     _isPlaying = isPlaying;
                     SaveArtwork(track);
@@ -542,7 +507,7 @@ namespace iTunes.SMTC
             {
                 _statusTimer?.Stop();
 
-                var currentTrack = GetCurrentTrack(iTrack);
+                var currentTrack = GetCurrentTrack(iTrack)?.GetMetadata();
                 UpdateSMTCDisplay(currentTrack);
                 _currentTrack = currentTrack;
 
@@ -566,7 +531,7 @@ namespace iTunes.SMTC
             return currentTrack;
         }
 
-        private void UpdateSMTCDisplay(IITTrack currentTrack)
+        private void UpdateSMTCDisplay(TrackMetadata currentTrack)
         {
             RunOnUIThread(async () =>
             {
@@ -597,11 +562,11 @@ namespace iTunes.SMTC
                 if (currentTrack != null)
                 {
                     updater.Type = MediaPlaybackType.Music;
-                    updater.AppMediaId = currentTrack?.TrackDatabaseID.ToString();
+                    updater.AppMediaId = currentTrack?.DatabaseID.ToString();
                     updater.MusicProperties.Artist = currentTrack?.Artist;
                     updater.MusicProperties.AlbumTitle = currentTrack?.Album;
                     updater.MusicProperties.Title = currentTrack?.Name;
-                    updater.MusicProperties.TrackNumber = (uint) currentTrack?.TrackNumber;
+                    updater.MusicProperties.TrackNumber = currentTrack?.TrackNumber ?? 0;
 
                     try
                     {
@@ -623,7 +588,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private void UpdateSMTCPlaybackState(IITTrack currentTrack)
+        private void UpdateSMTCPlaybackState(TrackMetadata currentTrack)
         {
             RunOnUIThread(() =>
             {
@@ -645,7 +610,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private void UpdateSMTCTimeline(IITTrack currentTrack)
+        private void UpdateSMTCTimeline(TrackMetadata currentTrack)
         {
             RunOnUIThread(() =>
             {
@@ -654,12 +619,12 @@ namespace iTunes.SMTC
 
                 if (currentTrack != null)
                 {
-                    timelineProperties.StartTime = TimeSpan.FromSeconds(currentTrack.Start);
-                    timelineProperties.EndTime = TimeSpan.FromSeconds(currentTrack.Finish);
+                    timelineProperties.StartTime = TimeSpan.FromSeconds(currentTrack.StartTime);
+                    timelineProperties.EndTime = TimeSpan.FromSeconds(currentTrack.EndTime);
                     timelineProperties.Position = TimeSpan.FromSeconds(_iTunesApp?.PlayerPosition ?? 0);
 
-                    timelineProperties.MinSeekTime = TimeSpan.FromSeconds(currentTrack.Start);
-                    timelineProperties.MaxSeekTime = TimeSpan.FromSeconds(currentTrack.Finish);
+                    timelineProperties.MinSeekTime = TimeSpan.FromSeconds(currentTrack.StartTime);
+                    timelineProperties.MaxSeekTime = TimeSpan.FromSeconds(currentTrack.EndTime);
                 }
 
                 _systemMediaTransportControls.UpdateTimelineProperties(timelineProperties);
@@ -690,7 +655,7 @@ namespace iTunes.SMTC
             cts = new CancellationTokenSource();
         }
 
-        private void ShowToastNotification(IITTrack track)
+        private void ShowToastNotification(TrackMetadata track)
         {
             if (track != null)
             {
