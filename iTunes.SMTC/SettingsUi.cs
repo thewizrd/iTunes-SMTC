@@ -78,12 +78,13 @@ namespace iTunes.SMTC
                 iTunesDispatcherCtrl.ShutdownQueueAsync();
                 
                 components?.Dispose();
+                _currentTrack?.Dispose();
             }
 
             // TODO: free unmanaged resources (unmanaged objects) and override finalizer
             if (_iTunesApp != null)
             {
-                Marshal.ReleaseComObject(_iTunesApp);
+                Marshal.FinalReleaseComObject(_iTunesApp);
             }
             // TODO: set large fields to null
             _iTunesApp = null;

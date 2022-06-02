@@ -33,8 +33,8 @@ namespace iTunes.SMTC
         private SystemMediaTransportControls _systemMediaTransportControls;
         private bool _metadataEmpty = true;
 
-        private DispatcherQueueController iTunesDispatcherCtrl;
-        private DispatcherQueue iTunesDispatcher;
+        private readonly DispatcherQueueController iTunesDispatcherCtrl;
+        private readonly DispatcherQueue iTunesDispatcher;
 
         private DispatcherQueueTimer _timelineTimer;
         private Timer _statusTimer;
@@ -179,12 +179,19 @@ namespace iTunes.SMTC
 
         private void InitializeiTunes()
         {
-            Debug.WriteLine("Connecting to iTunes...");
+            try
+            {
+                Trace.WriteLine("Connecting to iTunes...");
 
-            _iTunesApp = new iTunesAppClass();
+                _iTunesApp = new iTunesAppClass();
 
-            IntializeEvents();
-            InitializeControls(_iTunesApp?.CurrentTrack?.GetMetadata());
+                IntializeEvents();
+                InitializeControls(_iTunesApp?.CurrentTrack?.GetMetadata());
+            }
+            catch (Exception ex)
+            {
+                Crashes.TrackError(ex);
+            }
         }
 
         private void SaveArtwork(TrackMetadata track)
@@ -355,58 +362,76 @@ namespace iTunes.SMTC
         {
             // Disconnect before user is prompted, to avoid 'scripting' popup
             _statusTimer?.Stop();
-            DisconnectiTunes();
+            _timelineTimer?.Stop();
+            _delayStartTimer?.Stop();
+
+            RemoveEvents();
+
+            if (_iTunesApp != null)
+            {
+                Trace.WriteLine("Releasing iTunes COM object...");
+                Marshal.FinalReleaseComObject(_iTunesApp);
+                _iTunesApp = null;
+            }
+
+            GC.Collect();
+
+            DisconnectiTunes(true);
         }
 
         private void _iTunesApp_OnQuittingEvent()
         {
             _statusTimer?.Stop();
-            DisconnectiTunes();
+            _timelineTimer?.Stop();
+            _delayStartTimer?.Stop();
+
+            RemoveEvents();
+            DisconnectiTunes(true);
         }
 
-        private void DisconnectiTunes()
+        private void DisconnectiTunes(bool wasAlive = false)
         {
-            iTunesDispatcher.TryEnqueue(() =>
+            Trace.WriteLine("Disconnecting...");
+
+            _statusTimer?.Stop();
+            _timelineTimer?.Stop();
+            _delayStartTimer?.Stop();
+
+            if (_currentTrack != null)
             {
-                Debug.WriteLine("Disconnecting...");
+                Trace.WriteLine("Releasing Track COM object...");
+                _currentTrack?.Dispose();
+            }
+            _currentTrack = null;
 
-                _statusTimer?.Stop();
-                _timelineTimer?.Stop();
+            if (_iTunesApp != null)
+            {
+                Trace.WriteLine("Releasing iTunes COM object...");
+                wasAlive = true;
 
-                var wasAlive = false;
-
-                if (_currentTrack != null)
-                {
-                    Marshal.FinalReleaseComObject(_currentTrack);
-                    GC.Collect();
-                }
-                _currentTrack = null;
-
-                if (_iTunesApp != null)
-                {
-                    Debug.WriteLine("Releasing iTunes COM object...");
-                    wasAlive = true;
-
-                    RemoveEvents();
-                    Marshal.FinalReleaseComObject(_iTunesApp);
-                    GC.Collect();
-                }
+                RemoveEvents();
+                Marshal.FinalReleaseComObject(_iTunesApp);
                 _iTunesApp = null;
+            }
 
-                _isPlaying = false;
+            GC.Collect();
 
-                if (_systemMediaTransportControls != null)
-                {
-                    _systemMediaTransportControls.IsEnabled = false;
-                }
+            _isPlaying = false;
 
+            if (_systemMediaTransportControls != null)
+            {
+                _systemMediaTransportControls.IsEnabled = false;
+            }
+
+            Task.Run(() =>
+            {
                 // Give process time to end
+                Trace.WriteLine("Starting disconnect delay...");
+                Thread.Sleep(TimeSpan.FromSeconds(15));
+                Trace.WriteLine("Ended disconnect delay...");
+
                 if (wasAlive)
                 {
-                    Debug.WriteLine("Starting disconnect delay...");
-                    System.Threading.Thread.Sleep(10000); // 10s
-                    Debug.WriteLine("Ended disconnect delay...");
-
                     // NOTE: if the scripting popup appears, iTunes will close in 30s
                     // Therefore the process may still be alive after disconnecting
                     // To prevent restarting iTunes after disconnecting (since the process is still alive, delay the status timer
