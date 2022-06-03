@@ -17,15 +17,15 @@ namespace iTunes.SMTC.Model
         public uint TrackNumber { get; set; }
 
         /// <summary>
-        /// Duration of track in milliseconds
+        /// Duration of track in seconds
         /// </summary>
         public int Duration { get; set; }
         /// <summary>
-        /// Start time of track in milliseconds
+        /// Start time of track in seconds
         /// </summary>
         public int StartTime { get; set; }
         /// <summary>
-        /// End time of track in milliseconds
+        /// End time of track in seconds
         /// </summary>
         public int EndTime { get; set; }
 
