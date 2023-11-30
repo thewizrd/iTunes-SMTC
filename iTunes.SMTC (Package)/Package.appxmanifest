@@ -12,7 +12,7 @@
 	<Identity
 	  Name="49586DaveAntoine.MediaControllerforiTunes"
 	  Publisher="CN=FC137F73-0421-4275-8C89-E761F4D1BC3D"
-	  Version="1.0.20.0" />
+	  Version="1.0.21.0" />
 
 	<Properties>
 		<DisplayName>Media Controller Helper</DisplayName>
