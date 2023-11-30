@@ -1,5 +1,7 @@
+#if RELEASE
 using Microsoft.AppCenter;
 using Microsoft.AppCenter.Crashes;
+#endif
 
 namespace iTunes.SMTC
 {
@@ -20,7 +22,9 @@ namespace iTunes.SMTC
             if (createdNew)
             {
                 ApplicationConfiguration.Initialize();
+#if RELEASE
                 AppCenter.Start(Keys.AppCenterKey.GetSecret(), typeof(Crashes));
+#endif
                 Application.Run(new SettingsUi());
             }
         }
