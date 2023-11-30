@@ -15,127 +15,124 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsUi));
-            this.TrackNotificationSwitch = new System.Windows.Forms.CheckBox();
-            this.FormTitle = new System.Windows.Forms.Label();
-            this.StartupSwitch = new System.Windows.Forms.CheckBox();
-            this.TaskbarIcon = new System.Windows.Forms.NotifyIcon(this.components);
-            this.TaskbarIconCtxMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.OpenMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.QuitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.VersionCodeText = new System.Windows.Forms.Label();
-            this.CrashReportSwitch = new System.Windows.Forms.CheckBox();
-            this.TaskbarIconCtxMenu.SuspendLayout();
-            this.SuspendLayout();
+            TrackNotificationSwitch = new CheckBox();
+            FormTitle = new Label();
+            StartupSwitch = new CheckBox();
+            TaskbarIcon = new NotifyIcon(components);
+            TaskbarIconCtxMenu = new ContextMenuStrip(components);
+            OpenMenuItem = new ToolStripMenuItem();
+            QuitMenuItem = new ToolStripMenuItem();
+            VersionCodeText = new Label();
+            CrashReportSwitch = new CheckBox();
+            TaskbarIconCtxMenu.SuspendLayout();
+            SuspendLayout();
             // 
             // TrackNotificationSwitch
             // 
-            this.TrackNotificationSwitch.AutoSize = true;
-            this.TrackNotificationSwitch.Location = new System.Drawing.Point(19, 72);
-            this.TrackNotificationSwitch.Margin = new System.Windows.Forms.Padding(10, 5, 10, 5);
-            this.TrackNotificationSwitch.Name = "TrackNotificationSwitch";
-            this.TrackNotificationSwitch.Size = new System.Drawing.Size(148, 19);
-            this.TrackNotificationSwitch.TabIndex = 0;
-            this.TrackNotificationSwitch.Text = "Show track notification";
-            this.TrackNotificationSwitch.UseVisualStyleBackColor = true;
+            TrackNotificationSwitch.AutoSize = true;
+            TrackNotificationSwitch.Location = new Point(19, 72);
+            TrackNotificationSwitch.Margin = new Padding(10, 5, 10, 5);
+            TrackNotificationSwitch.Name = "TrackNotificationSwitch";
+            TrackNotificationSwitch.Size = new Size(148, 19);
+            TrackNotificationSwitch.TabIndex = 0;
+            TrackNotificationSwitch.Text = "Show track notification";
+            TrackNotificationSwitch.UseVisualStyleBackColor = true;
             // 
             // FormTitle
             // 
-            this.FormTitle.AutoSize = true;
-            this.FormTitle.Font = new System.Drawing.Font("Segoe UI Semibold", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.FormTitle.Location = new System.Drawing.Point(9, 4);
-            this.FormTitle.Margin = new System.Windows.Forms.Padding(0, 15, 0, 15);
-            this.FormTitle.Name = "FormTitle";
-            this.FormTitle.Padding = new System.Windows.Forms.Padding(0, 10, 0, 10);
-            this.FormTitle.Size = new System.Drawing.Size(86, 48);
-            this.FormTitle.TabIndex = 1;
-            this.FormTitle.Text = "Settings";
+            FormTitle.AutoSize = true;
+            FormTitle.Font = new Font("Segoe UI Semibold", 15F, FontStyle.Regular, GraphicsUnit.Point);
+            FormTitle.Location = new Point(9, 4);
+            FormTitle.Margin = new Padding(0, 15, 0, 15);
+            FormTitle.Name = "FormTitle";
+            FormTitle.Padding = new Padding(0, 10, 0, 10);
+            FormTitle.Size = new Size(86, 48);
+            FormTitle.TabIndex = 1;
+            FormTitle.Text = "Settings";
             // 
             // StartupSwitch
             // 
-            this.StartupSwitch.AutoSize = true;
-            this.StartupSwitch.Location = new System.Drawing.Point(19, 101);
-            this.StartupSwitch.Margin = new System.Windows.Forms.Padding(10, 5, 10, 5);
-            this.StartupSwitch.Name = "StartupSwitch";
-            this.StartupSwitch.Size = new System.Drawing.Size(127, 19);
-            this.StartupSwitch.TabIndex = 2;
-            this.StartupSwitch.Text = "Run app on startup";
-            this.StartupSwitch.UseVisualStyleBackColor = true;
+            StartupSwitch.AutoSize = true;
+            StartupSwitch.Location = new Point(19, 101);
+            StartupSwitch.Margin = new Padding(10, 5, 10, 5);
+            StartupSwitch.Name = "StartupSwitch";
+            StartupSwitch.Size = new Size(127, 19);
+            StartupSwitch.TabIndex = 2;
+            StartupSwitch.Text = "Run app on startup";
+            StartupSwitch.UseVisualStyleBackColor = true;
             // 
             // TaskbarIcon
             // 
-            this.TaskbarIcon.ContextMenuStrip = this.TaskbarIconCtxMenu;
-            this.TaskbarIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("TaskbarIcon.Icon")));
-            this.TaskbarIcon.Text = "Media Controller for iTunes";
-            this.TaskbarIcon.Visible = true;
-            this.TaskbarIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.TaskbarIcon_MouseDoubleClick);
+            TaskbarIcon.ContextMenuStrip = TaskbarIconCtxMenu;
+            TaskbarIcon.Icon = (Icon)resources.GetObject("TaskbarIcon.Icon");
+            TaskbarIcon.Text = "Media Controller";
+            TaskbarIcon.Visible = true;
+            TaskbarIcon.MouseDoubleClick += TaskbarIcon_MouseDoubleClick;
             // 
             // TaskbarIconCtxMenu
             // 
-            this.TaskbarIconCtxMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.OpenMenuItem,
-            this.QuitMenuItem});
-            this.TaskbarIconCtxMenu.Name = "TaskbarIconCtxMenu";
-            this.TaskbarIconCtxMenu.Size = new System.Drawing.Size(104, 48);
+            TaskbarIconCtxMenu.Items.AddRange(new ToolStripItem[] { OpenMenuItem, QuitMenuItem });
+            TaskbarIconCtxMenu.Name = "TaskbarIconCtxMenu";
+            TaskbarIconCtxMenu.Size = new Size(104, 48);
             // 
             // OpenMenuItem
             // 
-            this.OpenMenuItem.Name = "OpenMenuItem";
-            this.OpenMenuItem.Size = new System.Drawing.Size(103, 22);
-            this.OpenMenuItem.Text = "Open";
-            this.OpenMenuItem.Click += new System.EventHandler(this.OpenMenuItem_Click);
+            OpenMenuItem.Name = "OpenMenuItem";
+            OpenMenuItem.Size = new Size(103, 22);
+            OpenMenuItem.Text = "Open";
+            OpenMenuItem.Click += OpenMenuItem_Click;
             // 
             // QuitMenuItem
             // 
-            this.QuitMenuItem.Name = "QuitMenuItem";
-            this.QuitMenuItem.Size = new System.Drawing.Size(103, 22);
-            this.QuitMenuItem.Text = "Exit";
-            this.QuitMenuItem.Click += new System.EventHandler(this.QuitMenuItem_Click);
+            QuitMenuItem.Name = "QuitMenuItem";
+            QuitMenuItem.Size = new Size(103, 22);
+            QuitMenuItem.Text = "Exit";
+            QuitMenuItem.Click += QuitMenuItem_Click;
             // 
             // VersionCodeText
             // 
-            this.VersionCodeText.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.VersionCodeText.Location = new System.Drawing.Point(201, 154);
-            this.VersionCodeText.Margin = new System.Windows.Forms.Padding(0);
-            this.VersionCodeText.Name = "VersionCodeText";
-            this.VersionCodeText.Size = new System.Drawing.Size(83, 23);
-            this.VersionCodeText.TabIndex = 3;
-            this.VersionCodeText.Text = "v1.0.0.0";
-            this.VersionCodeText.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            VersionCodeText.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            VersionCodeText.Location = new Point(201, 154);
+            VersionCodeText.Margin = new Padding(0);
+            VersionCodeText.Name = "VersionCodeText";
+            VersionCodeText.Size = new Size(83, 23);
+            VersionCodeText.TabIndex = 3;
+            VersionCodeText.Text = "v1.0.0.0";
+            VersionCodeText.TextAlign = ContentAlignment.MiddleRight;
             // 
             // CrashReportSwitch
             // 
-            this.CrashReportSwitch.AutoSize = true;
-            this.CrashReportSwitch.Location = new System.Drawing.Point(19, 128);
-            this.CrashReportSwitch.Margin = new System.Windows.Forms.Padding(10, 5, 10, 5);
-            this.CrashReportSwitch.Name = "CrashReportSwitch";
-            this.CrashReportSwitch.Size = new System.Drawing.Size(144, 19);
-            this.CrashReportSwitch.TabIndex = 4;
-            this.CrashReportSwitch.Text = "Enable crash reporting";
-            this.CrashReportSwitch.UseVisualStyleBackColor = true;
+            CrashReportSwitch.AutoSize = true;
+            CrashReportSwitch.Location = new Point(19, 128);
+            CrashReportSwitch.Margin = new Padding(10, 5, 10, 5);
+            CrashReportSwitch.Name = "CrashReportSwitch";
+            CrashReportSwitch.Size = new Size(144, 19);
+            CrashReportSwitch.TabIndex = 4;
+            CrashReportSwitch.Text = "Enable crash reporting";
+            CrashReportSwitch.UseVisualStyleBackColor = true;
             // 
             // SettingsUi
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 176);
-            this.Controls.Add(this.CrashReportSwitch);
-            this.Controls.Add(this.VersionCodeText);
-            this.Controls.Add(this.StartupSwitch);
-            this.Controls.Add(this.FormTitle);
-            this.Controls.Add(this.TrackNotificationSwitch);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "SettingsUi";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "iTunes MediaController Settings";
-            this.TaskbarIconCtxMenu.ResumeLayout(false);
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(284, 176);
+            Controls.Add(CrashReportSwitch);
+            Controls.Add(VersionCodeText);
+            Controls.Add(StartupSwitch);
+            Controls.Add(FormTitle);
+            Controls.Add(TrackNotificationSwitch);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            Icon = (Icon)resources.GetObject("$this.Icon");
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "SettingsUi";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "MediaController Settings";
+            TaskbarIconCtxMenu.ResumeLayout(false);
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

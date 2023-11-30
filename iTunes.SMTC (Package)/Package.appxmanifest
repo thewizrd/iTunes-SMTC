@@ -50,7 +50,7 @@
 					<uap5:StartupTask
 						TaskId="iTunes.SMTC"
 						Enabled="false"
-						DisplayName="Media Controller for iTunes" />
+						DisplayName="Media Controller Helper" />
 				</uap5:Extension>
 			</Extensions>
 		</Application>
