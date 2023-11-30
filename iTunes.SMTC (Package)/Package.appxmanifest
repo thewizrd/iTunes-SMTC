@@ -15,7 +15,7 @@
 	  Version="1.0.20.0" />
 
 	<Properties>
-		<DisplayName>Media Controller for iTunes</DisplayName>
+		<DisplayName>Media Controller Helper</DisplayName>
 		<PublisherDisplayName>Dave Antoine</PublisherDisplayName>
 		<Logo>Assets\StoreLogo.png</Logo>
 	</Properties>
@@ -34,8 +34,8 @@
 		  Executable="$targetnametoken$.exe"
 		  EntryPoint="$targetentrypoint$">
 			<uap:VisualElements
-			  DisplayName="Media Controller for iTunes"
-			  Description="Integrates iTunes with Windows 10/11 system media controls"
+			  DisplayName="Media Controller Helper"
+			  Description="Integrates iTunes/Apple Music (Preview) with Windows 10/11 system media controls"
 			  BackgroundColor="transparent"
 			  Square150x150Logo="Assets\Square150x150Logo.png"
 			  Square44x44Logo="Assets\Square44x44Logo.png">
