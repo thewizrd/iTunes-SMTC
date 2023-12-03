@@ -21,12 +21,15 @@ namespace iTunes.SMTC
 #endif
 
             InitializeSettings();
-            InitializeControllers();
         }
 
         protected override void OnLoad(EventArgs e)
         {
             this.MinimizeToTray();
+            RunOnUIThread(() =>
+            {
+                InitializeControllers();
+            });
         }
 
         protected override void OnResize(EventArgs e)

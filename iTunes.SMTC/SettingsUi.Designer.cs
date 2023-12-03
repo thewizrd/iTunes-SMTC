@@ -139,7 +139,6 @@
             iTunesSwitch.Tag = "iTunes";
             iTunesSwitch.Text = "iTunes";
             iTunesSwitch.UseVisualStyleBackColor = true;
-            iTunesSwitch.CheckedChanged += iTunesSwitch_CheckedChanged;
             // 
             // AppleMusicSwitch
             // 
@@ -152,7 +151,6 @@
             AppleMusicSwitch.Tag = "AMPreview";
             AppleMusicSwitch.Text = "Apple Music (Preview)";
             AppleMusicSwitch.UseVisualStyleBackColor = true;
-            AppleMusicSwitch.CheckedChanged += AppleMusicSwitch_CheckedChanged;
             // 
             // SettingsUi
             // 

@@ -1,6 +1,5 @@
 ﻿using Windows.Media;
 using Windows.Media.Playback;
-using Windows.System;
 
 namespace iTunes.SMTC
 {
@@ -8,14 +7,11 @@ namespace iTunes.SMTC
     {
         private bool disposedValue;
 
-        private readonly DispatcherQueue MainDispatcher;
         private readonly MediaPlayer _mediaPlayer;
         protected readonly SystemMediaTransportControls _systemMediaTransportControls;
 
         protected BaseController()
         {
-            MainDispatcher = DispatcherQueue.GetForCurrentThread();
-
             _mediaPlayer = new MediaPlayer();
             _mediaPlayer.CommandManager.IsEnabled = false;
             _systemMediaTransportControls = _mediaPlayer.SystemMediaTransportControls;
@@ -59,10 +55,10 @@ namespace iTunes.SMTC
 
         protected void RunOnUIThread(Action action)
         {
-            this.MainDispatcher.TryEnqueue(() =>
+            Task.Factory.StartNew(() =>
             {
-                action.Invoke();
-            });
+                action?.Invoke();
+            }, CancellationToken.None, TaskCreationOptions.AttachedToParent, TaskScheduler.Default);
         }
 
         protected virtual void Dispose(bool disposing)

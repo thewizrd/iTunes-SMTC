@@ -1,4 +1,5 @@
-﻿using iTunes.SMTC.iTunes;
+﻿using iTunes.SMTC.AppleMusic;
+using iTunes.SMTC.iTunes;
 
 namespace iTunes.SMTC
 {
@@ -9,7 +10,7 @@ namespace iTunes.SMTC
         private void InitializeControllers()
         {
             ControllerRegistry.Add("iTunes", new iTunesController());
-            //ControllerRegistry.Add("AMPreview", new iTunesController());
+            ControllerRegistry.Add("AMPreview", new AppleMusicController());
 
             foreach (var entry in ControllerRegistry)
             {
