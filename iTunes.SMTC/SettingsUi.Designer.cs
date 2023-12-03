@@ -26,13 +26,16 @@
             QuitMenuItem = new ToolStripMenuItem();
             VersionCodeText = new Label();
             CrashReportSwitch = new CheckBox();
+            PlayerPluginsLabel = new Label();
+            iTunesSwitch = new CheckBox();
+            AppleMusicSwitch = new CheckBox();
             TaskbarIconCtxMenu.SuspendLayout();
             SuspendLayout();
             // 
             // TrackNotificationSwitch
             // 
             TrackNotificationSwitch.AutoSize = true;
-            TrackNotificationSwitch.Location = new Point(19, 72);
+            TrackNotificationSwitch.Location = new Point(19, 52);
             TrackNotificationSwitch.Margin = new Padding(10, 5, 10, 5);
             TrackNotificationSwitch.Name = "TrackNotificationSwitch";
             TrackNotificationSwitch.Size = new Size(148, 19);
@@ -44,18 +47,17 @@
             // 
             FormTitle.AutoSize = true;
             FormTitle.Font = new Font("Segoe UI Semibold", 15F, FontStyle.Regular, GraphicsUnit.Point);
-            FormTitle.Location = new Point(9, 4);
-            FormTitle.Margin = new Padding(0, 15, 0, 15);
+            FormTitle.Location = new Point(9, 9);
+            FormTitle.Margin = new Padding(0, 0, 0, 10);
             FormTitle.Name = "FormTitle";
-            FormTitle.Padding = new Padding(0, 10, 0, 10);
-            FormTitle.Size = new Size(86, 48);
+            FormTitle.Size = new Size(86, 28);
             FormTitle.TabIndex = 1;
             FormTitle.Text = "Settings";
             // 
             // StartupSwitch
             // 
             StartupSwitch.AutoSize = true;
-            StartupSwitch.Location = new Point(19, 101);
+            StartupSwitch.Location = new Point(19, 81);
             StartupSwitch.Margin = new Padding(10, 5, 10, 5);
             StartupSwitch.Name = "StartupSwitch";
             StartupSwitch.Size = new Size(127, 19);
@@ -94,7 +96,7 @@
             // VersionCodeText
             // 
             VersionCodeText.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            VersionCodeText.Location = new Point(201, 154);
+            VersionCodeText.Location = new Point(201, 239);
             VersionCodeText.Margin = new Padding(0);
             VersionCodeText.Name = "VersionCodeText";
             VersionCodeText.Size = new Size(83, 23);
@@ -105,7 +107,7 @@
             // CrashReportSwitch
             // 
             CrashReportSwitch.AutoSize = true;
-            CrashReportSwitch.Location = new Point(19, 128);
+            CrashReportSwitch.Location = new Point(19, 110);
             CrashReportSwitch.Margin = new Padding(10, 5, 10, 5);
             CrashReportSwitch.Name = "CrashReportSwitch";
             CrashReportSwitch.Size = new Size(144, 19);
@@ -113,11 +115,53 @@
             CrashReportSwitch.Text = "Enable crash reporting";
             CrashReportSwitch.UseVisualStyleBackColor = true;
             // 
+            // PlayerPluginsLabel
+            // 
+            PlayerPluginsLabel.AutoSize = true;
+            PlayerPluginsLabel.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Regular, GraphicsUnit.Point);
+            PlayerPluginsLabel.Location = new Point(9, 144);
+            PlayerPluginsLabel.Margin = new Padding(0, 10, 0, 10);
+            PlayerPluginsLabel.Name = "PlayerPluginsLabel";
+            PlayerPluginsLabel.Size = new Size(122, 19);
+            PlayerPluginsLabel.TabIndex = 5;
+            PlayerPluginsLabel.Text = "Controller Plugins";
+            // 
+            // iTunesSwitch
+            // 
+            iTunesSwitch.AutoSize = true;
+            iTunesSwitch.Checked = true;
+            iTunesSwitch.CheckState = CheckState.Checked;
+            iTunesSwitch.Location = new Point(19, 178);
+            iTunesSwitch.Margin = new Padding(10, 5, 10, 5);
+            iTunesSwitch.Name = "iTunesSwitch";
+            iTunesSwitch.Size = new Size(60, 19);
+            iTunesSwitch.TabIndex = 6;
+            iTunesSwitch.Tag = "iTunes";
+            iTunesSwitch.Text = "iTunes";
+            iTunesSwitch.UseVisualStyleBackColor = true;
+            iTunesSwitch.CheckedChanged += iTunesSwitch_CheckedChanged;
+            // 
+            // AppleMusicSwitch
+            // 
+            AppleMusicSwitch.AutoSize = true;
+            AppleMusicSwitch.Location = new Point(19, 207);
+            AppleMusicSwitch.Margin = new Padding(10, 5, 10, 5);
+            AppleMusicSwitch.Name = "AppleMusicSwitch";
+            AppleMusicSwitch.Size = new Size(144, 19);
+            AppleMusicSwitch.TabIndex = 7;
+            AppleMusicSwitch.Tag = "AMPreview";
+            AppleMusicSwitch.Text = "Apple Music (Preview)";
+            AppleMusicSwitch.UseVisualStyleBackColor = true;
+            AppleMusicSwitch.CheckedChanged += AppleMusicSwitch_CheckedChanged;
+            // 
             // SettingsUi
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(284, 176);
+            ClientSize = new Size(284, 261);
+            Controls.Add(AppleMusicSwitch);
+            Controls.Add(iTunesSwitch);
+            Controls.Add(PlayerPluginsLabel);
             Controls.Add(CrashReportSwitch);
             Controls.Add(VersionCodeText);
             Controls.Add(StartupSwitch);
@@ -129,7 +173,7 @@
             MinimizeBox = false;
             Name = "SettingsUi";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "MediaController Settings";
+            Text = "Media Controller Settings";
             TaskbarIconCtxMenu.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
@@ -146,5 +190,8 @@
         private ToolStripMenuItem QuitMenuItem;
         private Label VersionCodeText;
         private CheckBox CrashReportSwitch;
+        private Label PlayerPluginsLabel;
+        private CheckBox iTunesSwitch;
+        private CheckBox AppleMusicSwitch;
     }
 }

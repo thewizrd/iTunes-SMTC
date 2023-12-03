@@ -1,19 +1,9 @@
 ﻿using Microsoft.AppCenter.Crashes;
-using Microsoft.UI.Xaml;
 #if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
 using Microsoft.Win32.TaskScheduler;
-#endif
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using Windows.ApplicationModel;
-#if DEBUG || RELEASE
+#elif DEBUG || RELEASE
 using Windows.ApplicationModel;
 #endif
 
@@ -38,6 +28,10 @@ namespace iTunes.SMTC
             StartupSwitch.CheckedChanged += StartupSwitch_CheckedChanged;
             CrashReportSwitch.Checked = Settings.EnableCrashReporting;
             CrashReportSwitch.CheckedChanged += CrashReportSwitch_CheckedChanged;
+            iTunesSwitch.Checked = Settings.EnableiTunesController;
+            iTunesSwitch.CheckedChanged += iTunesSwitch_CheckedChanged;
+            AppleMusicSwitch.Checked = Settings.EnableAppleMusicController;
+            AppleMusicSwitch.CheckedChanged += AppleMusicSwitch_CheckedChanged;
         }
 
         private async void StartupSwitch_CheckedChanged(object sender, EventArgs e)
@@ -99,6 +93,20 @@ namespace iTunes.SMTC
         {
             var newValue = Settings.EnableCrashReporting = !Settings.EnableCrashReporting;
             await Crashes.SetEnabledAsync(newValue);
+        }
+
+        private void iTunesSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            var newValue = Settings.EnableiTunesController = !Settings.EnableiTunesController;
+            var key = iTunesSwitch.Tag as string;
+            EnableController(key, newValue);
+        }
+
+        private void AppleMusicSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            var newValue = Settings.EnableAppleMusicController = !Settings.EnableAppleMusicController;
+            var key = AppleMusicSwitch.Tag as string;
+            EnableController(key, newValue);
         }
     }
 }

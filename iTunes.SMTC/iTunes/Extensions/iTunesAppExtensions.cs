@@ -1,13 +1,13 @@
 ﻿using iTunesLib;
-using iTunes.SMTC.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AppCenter.Crashes;
+using iTunes.SMTC.iTunes.Model;
 
-namespace iTunes.SMTC.Extensions
+namespace iTunes.SMTC.iTunes.Extensions
 {
     public static class iTunesAppExtensions
     {
@@ -21,7 +21,7 @@ namespace iTunes.SMTC.Extensions
                 metadata.Artist = track?.Artist;
                 metadata.Album = track?.Album;
                 metadata.Name = track?.Name;
-                metadata.TrackNumber = (uint) track?.TrackNumber;
+                metadata.TrackNumber = (uint)track?.TrackNumber;
 
                 metadata.StartTime = track?.Start ?? 0;
                 metadata.EndTime = track?.Finish ?? 0;

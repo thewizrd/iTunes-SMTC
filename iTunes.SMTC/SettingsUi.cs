@@ -1,11 +1,8 @@
 using iTunes.SMTC.Utils;
 using System.Globalization;
-using System.Reflection;
-using System.Runtime.InteropServices;
 #if DEBUG || RELEASE
 using Windows.ApplicationModel;
 #endif
-using Windows.System;
 
 namespace iTunes.SMTC
 {
@@ -15,7 +12,7 @@ namespace iTunes.SMTC
         {
             InitializeComponent();
 
-            Text = "iTunes MediaController Settings";
+            Text = "Media Controller Settings";
 #if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
             VersionCodeText.Text = "v" + (Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly()).GetName().Version.ToString(4);
 #else
@@ -24,12 +21,7 @@ namespace iTunes.SMTC
 #endif
 
             InitializeSettings();
-
-            iTunesDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
-            iTunesDispatcher = iTunesDispatcherCtrl.DispatcherQueue;
-
-            InitializeSMTC();
-            InitializeiTunesController();
+            InitializeControllers();
         }
 
         protected override void OnLoad(EventArgs e)
@@ -63,40 +55,17 @@ namespace iTunes.SMTC
             if (disposing)
             {
                 // TODO: dispose managed state (managed objects)
-                if (_mediaPlayer != null)
+                foreach (var entry in ControllerRegistry)
                 {
-                    _systemMediaTransportControls = null;
-                    _mediaPlayer.Dispose();
-                    _mediaPlayer = null;
+                    entry.Value.Destroy();
+                    entry.Value.Dispose();
                 }
-                _delayStartTimer?.Stop();
-                _statusTimer?.Stop();
+                ControllerRegistry.Clear();
 
-                _delayStartTimer?.Dispose();
-                _statusTimer?.Dispose();
-
-                iTunesDispatcherCtrl.ShutdownQueueAsync();
-                
                 components?.Dispose();
-                _currentTrack?.Dispose();
             }
-
-            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-            if (_iTunesApp != null)
-            {
-                Marshal.FinalReleaseComObject(_iTunesApp);
-            }
-            // TODO: set large fields to null
-            _iTunesApp = null;
 
             base.Dispose(disposing);
-        }
-
-        // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        ~SettingsUi()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: false);
         }
 
         protected void RunOnUIThread(Action action)

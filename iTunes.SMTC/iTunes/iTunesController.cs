@@ -1,38 +1,25 @@
-﻿using iTunes.SMTC.Extensions;
-using iTunes.SMTC.Model;
+﻿using iTunes.SMTC.iTunes.Extensions;
+using iTunes.SMTC.iTunes.Model;
 using iTunesLib;
 using Microsoft.AppCenter.Crashes;
 using Microsoft.Toolkit.Uwp.Notifications;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Timers;
 using Windows.Media;
-using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System;
 using Timer = System.Timers.Timer;
 
-namespace iTunes.SMTC
+namespace iTunes.SMTC.iTunes
 {
-    public partial class SettingsUi
+    public class iTunesController : BaseController
     {
-        private const string NOTIF_TAG = "iTunes.SMTC";
+        private bool _isPlaying = false;
+        private bool _metadataEmpty = true;
 
         private iTunesApp _iTunesApp;
         private TrackMetadata _currentTrack;
-        private bool _isPlaying = false;
-
-        private MediaPlayer _mediaPlayer;
-        private SystemMediaTransportControls _systemMediaTransportControls;
-        private bool _metadataEmpty = true;
-
         private readonly DispatcherQueueController iTunesDispatcherCtrl;
         private readonly DispatcherQueue iTunesDispatcher;
 
@@ -44,25 +31,28 @@ namespace iTunes.SMTC
 
         private CancellationTokenSource cts = null;
 
-        private void InitializeSMTC()
+        public override string Key => "iTunes";
+        public override bool IsEnabled => Settings.EnableiTunesController;
+
+        public iTunesController() : base()
         {
-            _mediaPlayer = new MediaPlayer();
-            _mediaPlayer.CommandManager.IsEnabled = false;
-            _systemMediaTransportControls = _mediaPlayer.SystemMediaTransportControls;
-            _systemMediaTransportControls.IsEnabled = false;
-            _systemMediaTransportControls.IsNextEnabled = true;
-            _systemMediaTransportControls.IsPauseEnabled = true;
-            _systemMediaTransportControls.IsPlayEnabled = true;
-            _systemMediaTransportControls.IsPreviousEnabled = true;
-            _systemMediaTransportControls.IsStopEnabled = true;
-            _systemMediaTransportControls.IsRewindEnabled = true;
-            _systemMediaTransportControls.IsFastForwardEnabled = true;
-            _systemMediaTransportControls.ShuffleEnabled = false;
-            _systemMediaTransportControls.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
-            _systemMediaTransportControls.ButtonPressed += SystemControls_ButtonPressed;
-            _systemMediaTransportControls.ShuffleEnabledChangeRequested += SystemControls_ShuffleEnabledChangeRequested;
-            _systemMediaTransportControls.AutoRepeatModeChangeRequested += SystemControls_AutoRepeatModeChangeRequested;
-            _systemMediaTransportControls.PlaybackPositionChangeRequested += SystemControls_PlaybackPositionChangeRequested;
+            iTunesDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
+            iTunesDispatcher = iTunesDispatcherCtrl.DispatcherQueue;
+        }
+
+        protected override string GetNotificationTag() => "iTunes.SMTC";
+
+        public override void Initialize()
+        {
+            base.Initialize();
+            InitializeiTunesController();
+        }
+
+        public override void Destroy()
+        {
+            base.Destroy();
+            RemoveEvents();
+            DisconnectiTunes(wasAlive: true, stop: true);
         }
 
         private void InitializeiTunesController()
@@ -231,7 +221,7 @@ namespace iTunes.SMTC
             }
         }
 
-        private void SystemControls_ButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
+        public override void OnSystemControlsButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
@@ -262,7 +252,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private void SystemControls_ShuffleEnabledChangeRequested(SystemMediaTransportControls sender, ShuffleEnabledChangeRequestedEventArgs args)
+        public override void OnSystemControlsShuffleEnabledChangeRequested(SystemMediaTransportControls sender, ShuffleEnabledChangeRequestedEventArgs args)
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
@@ -283,7 +273,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private void SystemControls_AutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args)
+        public override void OnSystemControlsAutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args)
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
@@ -316,7 +306,7 @@ namespace iTunes.SMTC
             });
         }
 
-        private void SystemControls_PlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
+        public override void OnSystemControlsPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
         {
             iTunesDispatcher.TryEnqueue(() =>
             {
@@ -389,7 +379,7 @@ namespace iTunes.SMTC
             DisconnectiTunes(true);
         }
 
-        private void DisconnectiTunes(bool wasAlive = false)
+        private void DisconnectiTunes(bool wasAlive = false, bool stop = false)
         {
             Trace.WriteLine("Disconnecting...");
 
@@ -423,24 +413,27 @@ namespace iTunes.SMTC
                 _systemMediaTransportControls.IsEnabled = false;
             }
 
-            Task.Run(() =>
+            if (!stop)
             {
-                // Give process time to end
-                Trace.WriteLine("Starting disconnect delay...");
-                Thread.Sleep(TimeSpan.FromSeconds(15));
-                Trace.WriteLine("Ended disconnect delay...");
-
-                if (wasAlive)
+                Task.Run(() =>
                 {
-                    // NOTE: if the scripting popup appears, iTunes will close in 30s
-                    // Therefore the process may still be alive after disconnecting
-                    // To prevent restarting iTunes after disconnecting (since the process is still alive, delay the status timer
-                    // from starting by waiting ~30s; We'll stop timer once time has expired or iTunes process ended
-                    _delayStartTimer?.Start();
-                }
+                    // Give process time to end
+                    Trace.WriteLine("Starting disconnect delay...");
+                    Thread.Sleep(TimeSpan.FromSeconds(15));
+                    Trace.WriteLine("Ended disconnect delay...");
 
-                _statusTimer?.Start();
-            });
+                    if (wasAlive)
+                    {
+                        // NOTE: if the scripting popup appears, iTunes will close in 30s
+                        // Therefore the process may still be alive after disconnecting
+                        // To prevent restarting iTunes after disconnecting (since the process is still alive, delay the status timer
+                        // from starting by waiting ~30s; We'll stop timer once time has expired or iTunes process ended
+                        _delayStartTimer?.Start();
+                    }
+
+                    _statusTimer?.Start();
+                });
+            }
         }
 
         private void InitializeControls(TrackMetadata currentTrack)
@@ -694,9 +687,11 @@ namespace iTunes.SMTC
 
                 RunOnUIThread(() =>
                 {
+                    var notifTag = GetNotificationTag();
+
                     try
                     {
-                        ToastNotificationManagerCompat.History.Remove(NOTIF_TAG);
+                        ToastNotificationManagerCompat.History.Remove(notifTag);
                     }
                     catch { }
 
@@ -709,7 +704,7 @@ namespace iTunes.SMTC
                         .Show(async (t) =>
                         {
                             t.ExpirationTime = DateTimeOffset.Now.AddSeconds(5);
-                            t.Tag = NOTIF_TAG;
+                            t.Tag = notifTag;
 
                             try
                             {
@@ -721,6 +716,40 @@ namespace iTunes.SMTC
                         });
                 });
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (managed objects)
+                _delayStartTimer?.Stop();
+                _statusTimer?.Stop();
+
+                _delayStartTimer?.Dispose();
+                _statusTimer?.Dispose();
+
+                iTunesDispatcherCtrl.ShutdownQueueAsync();
+
+                _currentTrack?.Dispose();
+            }
+
+            // Free unmanaged resources (unmanaged objects) and override finalizer
+            if (_iTunesApp != null)
+            {
+                Marshal.FinalReleaseComObject(_iTunesApp);
+            }
+            // Set large fields to null
+            _iTunesApp = null;
+
+            base.Dispose(disposing);
+        }
+
+        // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        ~iTunesController()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
         }
     }
 }

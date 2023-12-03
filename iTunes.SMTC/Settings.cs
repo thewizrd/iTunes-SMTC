@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-#if DEBUG || RELEASE
+﻿#if DEBUG || RELEASE
 using Windows.Storage;
 #endif
 
@@ -14,6 +9,8 @@ namespace iTunes.SMTC
         public static bool ShowTrackToast { get { return GetShowTrackToast(); } set { SetShowTrackToast(value); } }
         public static bool OpenOnStartup { get { return GetOpenOnStartup(); } set { SetOpenOnStartup(value); } }
         public static bool EnableCrashReporting { get { return GetEnableCrashReporting(); } set { SetEnableCrashReporting(value); } }
+        public static bool EnableiTunesController { get { return GetEnableiTunesController(); } set { SetEnableiTunesController(value); } }
+        public static bool EnableAppleMusicController { get { return GetEnableAMPreviewController(); } set { SetEnableAMPreviewController(value); } }
 
 #if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
         private static bool GetShowTrackToast()
@@ -48,6 +45,28 @@ namespace iTunes.SMTC
             Properties.Settings.Default.EnableCrashReporting = value;
             Properties.Settings.Default.Save();
         }
+
+        private static bool GetEnableiTunesController()
+        {
+            return Properties.Settings.Default.EnableiTunesController;
+        }
+
+        private static void SetEnableiTunesController(bool value)
+        {
+            Properties.Settings.Default.EnableiTunesController = value;
+            Properties.Settings.Default.Save();
+        }
+
+        private static bool GetEnableAMPreviewController()
+        {
+            return Properties.Settings.Default.EnableAMPreviewController;
+        }
+
+        private static void SetEnableAMPreviewController(bool value)
+        {
+            Properties.Settings.Default.EnableAMPreviewController = value;
+            Properties.Settings.Default.Save();
+        }
 #else
         private static readonly ApplicationDataContainer LocalSettings = ApplicationData.Current.LocalSettings;
 
@@ -55,6 +74,8 @@ namespace iTunes.SMTC
         private const string KEY_SHOWTRACKTOAST = "key_showtracktoast";
         private const string KEY_OPENONSTARTUP = "key_openonstartup";
         private const string KEY_ENABLECRASHREPORT = "key_enablecrashreport";
+        private const string KEY_ENABLEITUNESCTRLR = "key_enableitunesctrlr";
+        private const string KEY_ENABLEAMPREVIEWCTRLR = "key_enableampreviewctrlr";
         #endregion Settings Keys
 
         private static bool GetShowTrackToast()
@@ -100,6 +121,36 @@ namespace iTunes.SMTC
         private static void SetEnableCrashReporting(bool value)
         {
             LocalSettings.Values[KEY_ENABLECRASHREPORT] = value;
+        }
+
+        private static bool GetEnableiTunesController()
+        {
+            if (LocalSettings.Values.TryGetValue(KEY_ENABLEITUNESCTRLR, out object value))
+            {
+                return (bool)value;
+            }
+
+            return true;
+        }
+
+        private static void SetEnableiTunesController(bool value)
+        {
+            LocalSettings.Values[KEY_ENABLEITUNESCTRLR] = value;
+        }
+
+        private static bool GetEnableAMPreviewController()
+        {
+            if (LocalSettings.Values.TryGetValue(KEY_ENABLEAMPREVIEWCTRLR, out object value))
+            {
+                return (bool)value;
+            }
+
+            return false;
+        }
+
+        private static void SetEnableAMPreviewController(bool value)
+        {
+            LocalSettings.Values[KEY_ENABLEAMPREVIEWCTRLR] = value;
         }
 #endif
     }

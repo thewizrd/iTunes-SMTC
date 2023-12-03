@@ -1,12 +1,7 @@
 ﻿using iTunesLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace iTunes.SMTC.Model
+namespace iTunes.SMTC.iTunes.Model
 {
     public class TrackMetadata : IDisposable
     {
