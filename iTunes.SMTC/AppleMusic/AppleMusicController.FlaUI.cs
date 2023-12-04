@@ -116,10 +116,78 @@ namespace iTunes.SMTC.AppleMusic
                 {
                     info.RepeatMode = MediaPlaybackAutoRepeatMode.None;
                 }
+
+                // Track Duration info
+                var progressSlider = content.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber"))?.AsSlider();
+                if (progressSlider != null)
+                {
+                    // Focus on slider to get time and duration
+                    //progressSlider.Focus();
+
+                    // Grab duration from slider (in seconds)
+                    info.TrackData.Duration = (int)progressSlider.Maximum;
+                    info.TrackProgress = (int)progressSlider.Value;
+
+                    /*
+                    var currentTime = content.FindFirstDescendant(cf => cf.ByAutomationId("CurrentTime"));
+                    var duration = content.FindFirstDescendant(cf => cf.ByAutomationId("Duration"));
+
+                    if (!string.IsNullOrWhiteSpace(currentTime?.Name) && !string.IsNullOrWhiteSpace(duration?.Name))
+                    {
+                        // Time format: x:xx; x:xx:xx
+                        var currentTimeDur = ParseTime(currentTime.Name);
+                        var remainingDuration = ParseTime(duration.Name);
+
+                        var totalDuration = currentTimeDur + remainingDuration.Negate();
+
+                        info.TrackData.Duration = (int)totalDuration.TotalSeconds;
+                        info.TrackProgress = (int)currentTimeDur.TotalSeconds;
+                    }
+                    */
+                }
             }
 
             return info;
         }
+
+        /*
+        private static TimeSpan ParseTime(string duration)
+        {
+            // Time formats: x:xx; x:xx:xx
+            var separatorCount = duration.Count(c => c == ':');
+            var negate = duration.StartsWith("-");
+            if (negate) duration = duration.Substring(1);
+
+            TimeSpan ts;
+
+            if (separatorCount == 1)
+            {
+                // m:ss
+                ts = TimeSpan.ParseExact(duration, "m\\:ss", CultureInfo.InvariantCulture);
+            }
+            else if (separatorCount == 2)
+            {
+                // h:mm:ss
+                if (duration.StartsWith("-"))
+                {
+                    ts = TimeSpan.ParseExact(duration, "h\\:mm\\:ss", CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    ts = TimeSpan.ParseExact(duration, "h\\:mm\\:ss", CultureInfo.InvariantCulture);
+                }
+            }
+            else
+            {
+                ts = TimeSpan.Zero;
+            }
+
+            if (negate)
+                return ts.Negate();
+
+            return ts;
+        }
+        */
 
         private void UpdateSMTCDisplay(AMPlayerInfo info)
         {
@@ -170,6 +238,16 @@ namespace iTunes.SMTC.AppleMusic
                         }
 
                         updater.Update();
+                    }
+
+                    if (info.TrackData != null)
+                    {
+                        _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties()
+                        {
+                            StartTime = TimeSpan.Zero,
+                            EndTime = TimeSpan.FromSeconds(info.TrackData.Duration),
+                            Position = TimeSpan.FromSeconds(info.TrackProgress)
+                        });
                     }
                 }
                 else
@@ -266,6 +344,26 @@ namespace iTunes.SMTC.AppleMusic
                             };
                         });
                         break;
+                }
+            }
+        }
+
+        private void UpdateAMPlayerPlaybackPosition(TimeSpan requestedPlaybackPosition)
+        {
+            // Poll for Apple Music window
+            var window = FindAppleMusicWindow();
+
+            if (window != null)
+            {
+                // Main Window Content
+                var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
+                // Progress slider
+                var progressSlider = content?.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber"))?.AsSlider();
+
+                if (progressSlider != null)
+                {
+                    // Set slider value (time in seconds)
+                    progressSlider.Value = requestedPlaybackPosition.TotalSeconds;
                 }
             }
         }

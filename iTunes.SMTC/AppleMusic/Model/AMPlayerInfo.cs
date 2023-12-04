@@ -14,6 +14,11 @@ namespace iTunes.SMTC.AppleMusic.Model
 
         public bool SkipBackEnabled { get; set; }
         public bool SkipForwardEnabled { get; set; }
+
+        /// <summary>
+        /// Current progress on track in seconds
+        /// </summary>
+        public int TrackProgress { get; set; }
     }
 
     public enum PlayPauseStopButtonState
@@ -29,6 +34,11 @@ namespace iTunes.SMTC.AppleMusic.Model
         public string Name { get; set; }
         public string Artist { get; set; }
         public string Album { get; set; }
+
+        /// <summary>
+        /// Duration of track in seconds
+        /// </summary>
+        public int Duration { get; set; } = -1;
 
         public override bool Equals(object obj)
         {

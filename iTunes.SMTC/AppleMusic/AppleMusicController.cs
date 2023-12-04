@@ -155,6 +155,9 @@ namespace iTunes.SMTC.AppleMusic
 
         public override void OnSystemControlsPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
         {
+            // Apple Music Preview doesn't support changing playback position natively as of now
+            // Fallback to FlaUI
+            UpdateAMPlayerPlaybackPosition(args.RequestedPlaybackPosition);
         }
 
         public override void OnSystemControlsShuffleEnabledChangeRequested(SystemMediaTransportControls sender, ShuffleEnabledChangeRequestedEventArgs args)
