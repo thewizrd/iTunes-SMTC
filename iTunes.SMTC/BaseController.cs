@@ -53,14 +53,6 @@ namespace iTunes.SMTC
         public virtual void OnSystemControlsAutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args) { }
         public virtual void OnSystemControlsPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args) { }
 
-        protected void RunOnUIThread(Action action)
-        {
-            Task.Factory.StartNew(() =>
-            {
-                action?.Invoke();
-            }, CancellationToken.None, TaskCreationOptions.AttachedToParent, TaskScheduler.Default);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

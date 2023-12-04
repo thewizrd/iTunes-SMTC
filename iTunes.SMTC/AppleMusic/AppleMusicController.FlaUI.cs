@@ -191,7 +191,7 @@ namespace iTunes.SMTC.AppleMusic
 
         private void UpdateSMTCDisplay(AMPlayerInfo info)
         {
-            RunOnUIThread(() =>
+            AMDispatcher.TryEnqueue(() =>
             {
                 if (info != null)
                 {

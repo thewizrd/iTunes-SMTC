@@ -557,7 +557,7 @@ namespace iTunes.SMTC.iTunes
 
         private void UpdateSMTCDisplay(TrackMetadata currentTrack)
         {
-            RunOnUIThread(async () =>
+            iTunesDispatcher.TryEnqueue(async () =>
             {
                 var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
 
@@ -614,7 +614,7 @@ namespace iTunes.SMTC.iTunes
 
         private void UpdateSMTCPlaybackState(TrackMetadata currentTrack)
         {
-            RunOnUIThread(() =>
+            iTunesDispatcher.TryEnqueue(() =>
             {
                 var playerState = _iTunesApp?.PlayerState ?? ITPlayerState.ITPlayerStateStopped;
 
@@ -636,7 +636,7 @@ namespace iTunes.SMTC.iTunes
 
         private void UpdateSMTCTimeline(TrackMetadata currentTrack)
         {
-            RunOnUIThread(() =>
+            iTunesDispatcher.TryEnqueue(() =>
             {
                 // Update timeline
                 var timelineProperties = new SystemMediaTransportControlsTimelineProperties();
@@ -685,7 +685,7 @@ namespace iTunes.SMTC.iTunes
             {
                 ResetToken();
 
-                RunOnUIThread(() =>
+                iTunesDispatcher.TryEnqueue(() =>
                 {
                     var notifTag = GetNotificationTag();
 
