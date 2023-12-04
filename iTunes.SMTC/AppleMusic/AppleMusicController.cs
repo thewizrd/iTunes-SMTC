@@ -35,6 +35,7 @@ namespace iTunes.SMTC.AppleMusic
 
         public override void Destroy()
         {
+            StopNPSMService();
             _statusTimer?.Stop();
 
             _isPlaying = false;
@@ -61,7 +62,14 @@ namespace iTunes.SMTC.AppleMusic
                     if (IsAppleMusicRunning())
                     {
                         // Update SMTC display
-                        UpdateSMTCDisplay(GetAMPlayerInfo());
+                        if (MediaSession != null)
+                        {
+                            UpdateSMTCExtras(GetAMPlayerInfo());
+                        }
+                        else
+                        {
+                            UpdateSMTCDisplay(GetAMPlayerInfo());
+                        }
                     }
                     else
                     {
@@ -70,78 +78,8 @@ namespace iTunes.SMTC.AppleMusic
                 }
                 catch (Exception) { }
             };
-            _statusTimer.Start();
-        }
 
-        private void UpdateSMTCDisplay(AMPlayerInfo info)
-        {
-            RunOnUIThread(() =>
-            {
-                if (info != null)
-                {
-                    _systemMediaTransportControls.PlaybackStatus = info.IsPlaying ? Windows.Media.MediaPlaybackStatus.Playing : (!string.IsNullOrEmpty(info.TrackData?.Name) ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Closed);
-                    _systemMediaTransportControls.IsEnabled = !string.IsNullOrEmpty(info?.TrackData?.Name);
-
-                    _systemMediaTransportControls.ShuffleEnabled = info.ShuffleEnabled;
-                    _systemMediaTransportControls.AutoRepeatMode = info.RepeatMode;
-
-                    _systemMediaTransportControls.IsPreviousEnabled = info.SkipBackEnabled;
-                    _systemMediaTransportControls.IsNextEnabled = info.SkipForwardEnabled;
-
-                    if (info.PlayPauseStopButtonState == PlayPauseStopButtonState.Stop)
-                    {
-                        _systemMediaTransportControls.IsPauseEnabled = false;
-                        _systemMediaTransportControls.IsPlayEnabled = false;
-                        _systemMediaTransportControls.IsStopEnabled = true;
-                    }
-                    else
-                    {
-                        _systemMediaTransportControls.IsPauseEnabled = true;
-                        _systemMediaTransportControls.IsPlayEnabled = true;
-                        _systemMediaTransportControls.IsStopEnabled = false;
-                    }
-
-                    if (_currentTrack == null || !Equals(info.TrackData, _currentTrack))
-                    {
-                        _currentTrack = info.TrackData;
-
-                        SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
-                        updater.ClearAll();
-
-                        if (!string.IsNullOrEmpty(info?.TrackData?.Name))
-                        {
-                            updater.Type = MediaPlaybackType.Music;
-                            updater.MusicProperties.Title = info.TrackData.Name;
-                            updater.MusicProperties.Artist = info.TrackData.Artist;
-                            updater.MusicProperties.AlbumTitle = info.TrackData.Album;
-                            _metadataEmpty = false;
-                        }
-                        else
-                        {
-                            _metadataEmpty = true;
-                        }
-
-                        updater.Update();
-                    }
-                }
-                else
-                {
-                    _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Closed;
-                    _systemMediaTransportControls.IsEnabled = false;
-                    _systemMediaTransportControls.ShuffleEnabled = false;
-                    _systemMediaTransportControls.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
-
-                    _systemMediaTransportControls.IsPauseEnabled = true;
-                    _systemMediaTransportControls.IsPlayEnabled = true;
-                    _systemMediaTransportControls.IsStopEnabled = false;
-
-                    SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
-                    updater.ClearAll();
-                    _metadataEmpty = true;
-
-                    _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties());
-                }
-            });
+            StartNPSMService();
         }
 
         private static bool IsAppleMusicRunning()
@@ -149,6 +87,81 @@ namespace iTunes.SMTC.AppleMusic
             Process[] processes = Process.GetProcessesByName("AppleMusic");
 
             return processes.Length > 0;
+        }
+
+        public override void OnSystemControlsAutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args)
+        {
+            // Apple Music Preview doesn't support changing repeat mode as of now
+            // Fallback to FlaUI
+            SendAMPlayerCommand(AppleMusicControlButtons.Repeat);
+        }
+
+        public override void OnSystemControlsButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
+        {
+            switch (args.Button)
+            {
+                case SystemMediaTransportControlsButton.Play:
+                    if (MediaPlaybackSource != null && _npsmInfo?.IsPlayEnabled == true)
+                    {
+                        MediaPlaybackSource?.SendMediaPlaybackCommand(NPSMLib.MediaPlaybackCommands.Play);
+                    }
+                    else
+                    {
+                        SendAMPlayerCommand(AppleMusicControlButtons.PlayPauseStop);
+                    }
+                    break;
+                case SystemMediaTransportControlsButton.Pause:
+                    if (MediaPlaybackSource != null && _npsmInfo?.IsPauseEnabled == true)
+                    {
+                        MediaPlaybackSource?.SendMediaPlaybackCommand(NPSMLib.MediaPlaybackCommands.Pause);
+                    }
+                    else
+                    {
+                        SendAMPlayerCommand(AppleMusicControlButtons.PlayPauseStop);
+                    }
+                    break;
+                case SystemMediaTransportControlsButton.Stop:
+                    if (MediaPlaybackSource != null && _npsmInfo?.IsStopEnabled == true)
+                    {
+                        MediaPlaybackSource?.SendMediaPlaybackCommand(NPSMLib.MediaPlaybackCommands.Stop);
+                    }
+                    else
+                    {
+                        SendAMPlayerCommand(AppleMusicControlButtons.PlayPauseStop);
+                    }
+                    break;
+                case SystemMediaTransportControlsButton.Next:
+                    if (MediaPlaybackSource != null && _npsmInfo?.IsNextEnabled == true)
+                    {
+                        MediaPlaybackSource?.SendMediaPlaybackCommand(NPSMLib.MediaPlaybackCommands.Next);
+                    }
+                    else
+                    {
+                        SendAMPlayerCommand(AppleMusicControlButtons.SkipForward);
+                    }
+                    break;
+                case SystemMediaTransportControlsButton.Previous:
+                    if (MediaPlaybackSource != null && _npsmInfo?.IsPreviousEnabled == true)
+                    {
+                        MediaPlaybackSource?.SendMediaPlaybackCommand(NPSMLib.MediaPlaybackCommands.Previous);
+                    }
+                    else
+                    {
+                        SendAMPlayerCommand(AppleMusicControlButtons.SkipBack);
+                    }
+                    break;
+            }
+        }
+
+        public override void OnSystemControlsPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
+        {
+        }
+
+        public override void OnSystemControlsShuffleEnabledChangeRequested(SystemMediaTransportControls sender, ShuffleEnabledChangeRequestedEventArgs args)
+        {
+            // Apple Music Preview doesn't support changing shuffle mode as of now
+            // Fallback to FlaUI
+            SendAMPlayerCommand(AppleMusicControlButtons.Shuffle);
         }
     }
 }
