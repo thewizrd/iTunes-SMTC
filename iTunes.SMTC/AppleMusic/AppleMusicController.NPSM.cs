@@ -37,7 +37,10 @@ namespace iTunes.SMTC.AppleMusic
 
         private void NPSManager_SessionsChanged(object sender, NowPlayingSessionManagerEventArgs args)
         {
+            if (args.NotificationType != NowPlayingSessionManagerNotificationType.CurrentSessionChanged)
+            {
             ReloadSessions(sender as NowPlayingSessionManager ?? NPSManager);
+        }
         }
 
         private void ReloadSessions(NowPlayingSessionManager sessionManager)
