@@ -1,8 +1,8 @@
-# Media Controller for iTunes
+# Media Controller Helper for iTunes / Apple Music Preview
 
-Integrates iTunes with Windows 10/11 system media controls
+Integrates iTunes / Apple Music Preview with Windows 10/11 system media controls
 
-Available for Windows 10/11; Requires iTunes of course
+Available for Windows 10/11; Requires iTunes or Apple Music Preview of course
 
 ## Screenshots
 
@@ -10,7 +10,7 @@ Available for Windows 10/11; Requires iTunes of course
 
 ## Release
 
-<a href='//www.microsoft.com/store/apps/9NQ3D21QT8ML?cid=storebadge&ocid=badge'><img src='https://getbadgecdn.azureedge.net/images/English_L.png' alt='Get it from the Microsoft Store' width='284px' height='104px'/></a>
+<a href='//www.microsoft.com/store/apps/9NQ3D21QT8ML?cid=storebadge&ocid=badge'><img src='https://get.microsoft.com/images/en-us%20dark.svg' alt='Get it from the Microsoft Store' width='200'/></a>
 
 <b>OR</b>
 
