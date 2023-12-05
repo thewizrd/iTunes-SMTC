@@ -1,6 +1,9 @@
 using iTunes.SMTC.Utils;
+
+#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
+using System.Reflection;
+#elif DEBUG || RELEASE
 using System.Globalization;
-#if DEBUG || RELEASE
 using Windows.ApplicationModel;
 #endif
 
