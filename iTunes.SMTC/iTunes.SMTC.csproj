@@ -11,8 +11,7 @@
 		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
 		<Configurations>Debug;Release;UnpackagedDebug;UnpackagedRelease</Configurations>
 		<AssemblyVersion></AssemblyVersion>
-		<Version>1.0.20.0</Version>
-		<FileVersion></FileVersion>
+		<Version>1.1.0.0</Version>
 		<Company>Dave Antoine</Company>
 	</PropertyGroup>
 
