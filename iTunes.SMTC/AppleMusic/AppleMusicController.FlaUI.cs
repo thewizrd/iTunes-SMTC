@@ -191,7 +191,7 @@ namespace iTunes.SMTC.AppleMusic
 
         private void UpdateSMTCDisplay(AMPlayerInfo info)
         {
-            AMDispatcher.TryEnqueue(() =>
+            AMDispatcher.TryEnqueue(async () =>
             {
                 if (info != null)
                 {
@@ -217,7 +217,9 @@ namespace iTunes.SMTC.AppleMusic
                         _systemMediaTransportControls.IsStopEnabled = false;
                     }
 
-                    if (_currentTrack == null || !Equals(info.TrackData, _currentTrack))
+                    var trackChanged = _currentTrack == null || !Equals(info.TrackData, _currentTrack);
+
+                    if (trackChanged)
                     {
                         _currentTrack = info.TrackData;
 
@@ -238,6 +240,9 @@ namespace iTunes.SMTC.AppleMusic
                         }
 
                         updater.Update();
+
+                        // Remove artwork
+                        await SaveArtwork(null);
                     }
 
                     if (info.TrackData != null)
@@ -249,6 +254,13 @@ namespace iTunes.SMTC.AppleMusic
                             Position = TimeSpan.FromSeconds(info.TrackProgress)
                         });
                     }
+
+                    if ((trackChanged || _isPlaying != info.IsPlaying) && Settings.ShowTrackToast)
+                    {
+                        ShowToastNotification(info.TrackData);
+                    }
+
+                    _isPlaying = info.IsPlaying;
                 }
                 else
                 {
@@ -263,9 +275,11 @@ namespace iTunes.SMTC.AppleMusic
 
                     SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
                     updater.ClearAll();
-                    _metadataEmpty = true;
 
                     _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties());
+
+                    _isPlaying = false;
+                    _metadataEmpty = true;
                 }
             });
         }

@@ -1,6 +1,9 @@
 ﻿using iTunes.SMTC.AppleMusic.Model;
+using Microsoft.AppCenter.Crashes;
+using Microsoft.Toolkit.Uwp.Notifications;
 using System.Diagnostics;
 using Windows.Media;
+using Windows.Storage;
 using Windows.System;
 
 namespace iTunes.SMTC.AppleMusic
@@ -18,6 +21,10 @@ namespace iTunes.SMTC.AppleMusic
 
         public override string Key => "AMPreview";
         public override bool IsEnabled => Settings.EnableAppleMusicController;
+
+        private Uri _artworkUri;
+
+        private CancellationTokenSource cts = null;
 
         public AppleMusicController() : base()
         {
@@ -76,7 +83,10 @@ namespace iTunes.SMTC.AppleMusic
                         // clear info
                     }
                 }
-                catch (Exception) { }
+                catch (Exception ex)
+                {
+                    Crashes.TrackError(ex);
+                }
             };
 
             StartNPSMService();
@@ -87,6 +97,12 @@ namespace iTunes.SMTC.AppleMusic
             Process[] processes = Process.GetProcessesByName("AppleMusic");
 
             return processes.Length > 0;
+        }
+
+        private void ResetToken()
+        {
+            cts?.Cancel();
+            cts = new CancellationTokenSource();
         }
 
         public override void OnSystemControlsAutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args)
@@ -165,6 +181,86 @@ namespace iTunes.SMTC.AppleMusic
             // Apple Music Preview doesn't support changing shuffle mode as of now
             // Fallback to FlaUI
             SendAMPlayerCommand(AppleMusicControlButtons.Shuffle);
+        }
+
+        private async Task SaveArtwork(Stream artworkStream)
+        {
+            if (_artworkUri == null)
+            {
+#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
+                var BasePath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);
+                var AppPath = Path.Combine(BasePath, "iTunes.SMTC");
+                Directory.CreateDirectory(AppPath);
+                var FilePath = Path.Combine(AppPath, "artwork.img");
+                _artworkUri = new Uri(FilePath);
+#else
+                var BaseFolder = ApplicationData.Current.LocalCacheFolder;
+                var ArtworkFolderPath = Path.Combine(BaseFolder.Path, "Artwork");
+                Directory.CreateDirectory(ArtworkFolderPath);
+                var ArtworkFilePath = Path.Combine(ArtworkFolderPath, "artwork.img");
+                _artworkUri = new Uri(ArtworkFilePath);
+#endif
+            }
+
+            try
+            {
+                    if (artworkStream != null && artworkStream.Length != 0)
+                    {
+                        // Save to file
+                        var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
+                    using var fs = await file.OpenTransactedWriteAsync();
+                    await artworkStream.CopyToAsync(fs.Stream.AsStreamForWrite());
+                    await fs.CommitAsync();
+                    }
+                    else
+                    {
+                        // Delete artwork or replace with empty
+                        Properties.Resources.no_artwork.Save(_artworkUri.LocalPath);
+                    }
+            }
+            catch (Exception ex)
+            {
+                Crashes.TrackError(ex);
+            }
+        }
+
+        private void ShowToastNotification(TrackMetadata track)
+        {
+            if (track != null)
+            {
+                ResetToken();
+
+                AMDispatcher.TryEnqueue(() =>
+                {
+                    var notifTag = GetNotificationTag();
+
+                    try
+                    {
+                        ToastNotificationManagerCompat.History.Remove(notifTag);
+                    }
+                    catch { }
+
+                    new ToastContentBuilder()
+                        .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
+                        .AddText(track.Artist, AdaptiveTextStyle.Body, hintMaxLines: 1)
+                        .AddText(track.Album, AdaptiveTextStyle.Body, hintMaxLines: 1)
+                        .AddAppLogoOverride(_artworkUri)
+                        .AddAudio(null, silent: true) // Disable sound
+                        .Show(async (t) =>
+                        {
+                            t.ExpirationTime = DateTimeOffset.Now.AddSeconds(5);
+                            t.Tag = notifTag;
+
+                            try
+                            {
+                                await Task.Delay(5250, cts.Token);
+
+                                ToastNotificationManagerCompat.History.Remove(t.Tag);
+                            }
+                            catch { }
+                        });
+                });
+            }
         }
     }
 }

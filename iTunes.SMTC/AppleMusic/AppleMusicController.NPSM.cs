@@ -2,6 +2,7 @@
 using Microsoft.AppCenter.Crashes;
 using NPSMLib;
 using Windows.Media;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace iTunes.SMTC.AppleMusic
@@ -131,6 +132,18 @@ namespace iTunes.SMTC.AppleMusic
                     {
                         _npsmInfo.TrackData.Artist = mediaObjectInfo.AlbumArtist;
                     }
+
+                    // Artist and Album name are sent together separated by " — " character
+                    // Split the two to get the names separately
+                    if (_npsmInfo.TrackData.Artist?.Contains(" — ") == true)
+                    {
+                        var artistAlbumInfos = _npsmInfo.TrackData.Artist.Split(" — ");
+                        if (artistAlbumInfos.Length == 2)
+                        {
+                            _npsmInfo.TrackData.Artist = artistAlbumInfos[0];
+                            _npsmInfo.TrackData.Album = artistAlbumInfos[1];
+                        }
+                    }
                 }
 
                 SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
@@ -140,40 +153,30 @@ namespace iTunes.SMTC.AppleMusic
                 {
                     updater.Type = MediaPlaybackType.Music;
                     updater.MusicProperties.Title = _npsmInfo.TrackData.Name;
-
-                    // Artist and Album name are sent together separated by " — " character
-                    // Split the two to get the names separately
-                    if (_npsmInfo.TrackData.Artist?.Contains(" — ") == true)
-                    {
-                        var artistAlbumInfos = _npsmInfo.TrackData.Artist.Split(" — ");
-                        if (artistAlbumInfos.Length == 2)
-                        {
-                            updater.MusicProperties.Artist = artistAlbumInfos[0];
-                            updater.MusicProperties.AlbumTitle = artistAlbumInfos[1];
-                        }
-                        else
-                        {
-                            updater.MusicProperties.Artist = _npsmInfo.TrackData.Artist;
-                            updater.MusicProperties.AlbumTitle = _npsmInfo.TrackData.Album;
-                        }
-                    }
-                    else
-                    {
-                        updater.MusicProperties.Artist = _npsmInfo.TrackData.Artist;
-                        updater.MusicProperties.AlbumTitle = _npsmInfo.TrackData.Album;
-                    }
+                    updater.MusicProperties.Artist = _npsmInfo.TrackData.Artist;
+                    updater.MusicProperties.AlbumTitle = _npsmInfo.TrackData.Album;
 
                     if (thumbnailStream != null && thumbnailStream.Length > 0)
                     {
-                        var memoryStreamCpy = new InMemoryRandomAccessStream();
-                        await RandomAccessStream.CopyAsync(thumbnailStream.AsInputStream(), memoryStreamCpy);
-                        updater.Thumbnail = RandomAccessStreamReference.CreateFromStream(memoryStreamCpy);
+                        await SaveArtwork(thumbnailStream);
+
+                        try
+                        {
+                            updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                        }
+                        catch (Exception ex)
+                        {
+                            Crashes.TrackError(ex);
+                        }
                     }
 
+                    _currentTrack = _npsmInfo.TrackData;
                     _metadataEmpty = false;
                 }
                 else
                 {
+                    _currentTrack = null;
+                    _isPlaying = false;
                     _metadataEmpty = true;
                 }
 
@@ -210,7 +213,7 @@ namespace iTunes.SMTC.AppleMusic
 
                 if (_npsmInfo != null)
                 {
-                    _npsmInfo.IsPlaying = (playerValidProps.HasFlag(MediaPlaybackProps.State) ? playbackInfo.PlaybackState : MediaPlaybackState.Unknown) switch
+                    _isPlaying = _npsmInfo.IsPlaying = (playerValidProps.HasFlag(MediaPlaybackProps.State) ? playbackInfo.PlaybackState : MediaPlaybackState.Unknown) switch
                     {
                         MediaPlaybackState.Playing => true,
                         _ => false,
@@ -243,10 +246,30 @@ namespace iTunes.SMTC.AppleMusic
             switch (e.DataChangedEvent)
             {
                 case MediaPlaybackDataChangedEvent.PlaybackInfoChanged:
+                    var wasPlaying = _isPlaying;
                     UpdatePlaybackInfo(e.MediaPlaybackDataSource);
+
+                    // Queue up notification
+                    AMDispatcher.TryEnqueue(() =>
+                    {
+                        if (!wasPlaying && _isPlaying && Settings.ShowTrackToast)
+                        {
+                            ShowToastNotification(_currentTrack);
+                        }
+                    });
                     break;
                 case MediaPlaybackDataChangedEvent.MediaInfoChanged:
+                    var prevTrack = _currentTrack?.Copy();
                     UpdateMediaProperties(e.MediaPlaybackDataSource);
+
+                    // Queue up notification
+                    AMDispatcher.TryEnqueue(() =>
+                    {
+                        if ((prevTrack == null || !Equals(prevTrack, _currentTrack)) && Settings.ShowTrackToast)
+                        {
+                            ShowToastNotification(_currentTrack);
+                        }
+                    });
                     break;
                 case MediaPlaybackDataChangedEvent.TimelinePropertiesChanged:
                     UpdateTimeline(e.MediaPlaybackDataSource);
