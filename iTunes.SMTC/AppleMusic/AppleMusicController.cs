@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Windows.Media;
 using Windows.Storage;
 using Windows.System;
+using Timer = System.Timers.Timer;
 
 namespace iTunes.SMTC.AppleMusic
 {
@@ -17,7 +18,7 @@ namespace iTunes.SMTC.AppleMusic
         private readonly DispatcherQueueController AMDispatcherCtrl;
         private readonly DispatcherQueue AMDispatcher;
 
-        private DispatcherQueueTimer _statusTimer;
+        private Timer _statusTimer;
 
         public override string Key => "AMPreview";
         public override bool IsEnabled => Settings.EnableAppleMusicController;
@@ -58,9 +59,12 @@ namespace iTunes.SMTC.AppleMusic
 
         private void InitializeAMController()
         {
-            _statusTimer = AMDispatcher.CreateTimer();
-            _statusTimer.Interval = TimeSpan.FromSeconds(1);
-            _statusTimer.Tick += (s, e) =>
+            _statusTimer = new Timer()
+            {
+                AutoReset = true,
+                Interval = 1000
+            };
+            _statusTimer.Elapsed += (s, e) =>
             {
                 try
                 {
@@ -204,19 +208,19 @@ namespace iTunes.SMTC.AppleMusic
 
             try
             {
-                    if (artworkStream != null && artworkStream.Length != 0)
-                    {
-                        // Save to file
-                        var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
+                if (artworkStream != null && artworkStream.Length != 0)
+                {
+                    // Save to file
+                    var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
                     using var fs = await file.OpenTransactedWriteAsync();
                     await artworkStream.CopyToAsync(fs.Stream.AsStreamForWrite());
                     await fs.CommitAsync();
-                    }
-                    else
-                    {
-                        // Delete artwork or replace with empty
-                        Properties.Resources.no_artwork.Save(_artworkUri.LocalPath);
-                    }
+                }
+                else
+                {
+                    // Delete artwork or replace with empty
+                    Properties.Resources.no_artwork.Save(_artworkUri.LocalPath);
+                }
             }
             catch (Exception ex)
             {

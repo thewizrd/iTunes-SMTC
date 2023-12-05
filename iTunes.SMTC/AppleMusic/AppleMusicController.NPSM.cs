@@ -39,8 +39,8 @@ namespace iTunes.SMTC.AppleMusic
         {
             if (args.NotificationType != NowPlayingSessionManagerNotificationType.CurrentSessionChanged)
             {
-            ReloadSessions(sender as NowPlayingSessionManager ?? NPSManager);
-        }
+                ReloadSessions(sender as NowPlayingSessionManager ?? NPSManager);
+            }
         }
 
         private void ReloadSessions(NowPlayingSessionManager sessionManager)
@@ -52,7 +52,7 @@ namespace iTunes.SMTC.AppleMusic
             if (_statusTimer != null)
             {
                 _statusTimer.Stop();
-                _statusTimer.Interval = MediaSession != null ? TimeSpan.FromSeconds(5) : TimeSpan.FromSeconds(1);
+                _statusTimer.Interval = MediaSession != null ? 5000 : 1000;
                 _statusTimer.Start();
             }
 
