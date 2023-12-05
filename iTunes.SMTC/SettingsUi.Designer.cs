@@ -22,6 +22,8 @@
             StartupSwitch = new CheckBox();
             TaskbarIcon = new NotifyIcon(components);
             TaskbarIconCtxMenu = new ContextMenuStrip(components);
+            TitleMenuItem = new ToolStripMenuItem();
+            TitleSeparator = new ToolStripSeparator();
             OpenMenuItem = new ToolStripMenuItem();
             QuitMenuItem = new ToolStripMenuItem();
             VersionCodeText = new Label();
@@ -69,27 +71,39 @@
             // 
             TaskbarIcon.ContextMenuStrip = TaskbarIconCtxMenu;
             TaskbarIcon.Icon = (Icon)resources.GetObject("TaskbarIcon.Icon");
-            TaskbarIcon.Text = "Media Controller";
+            TaskbarIcon.Text = "Media Controller Helper";
             TaskbarIcon.Visible = true;
             TaskbarIcon.MouseDoubleClick += TaskbarIcon_MouseDoubleClick;
             // 
             // TaskbarIconCtxMenu
             // 
-            TaskbarIconCtxMenu.Items.AddRange(new ToolStripItem[] { OpenMenuItem, QuitMenuItem });
+            TaskbarIconCtxMenu.Items.AddRange(new ToolStripItem[] { TitleMenuItem, TitleSeparator, OpenMenuItem, QuitMenuItem });
             TaskbarIconCtxMenu.Name = "TaskbarIconCtxMenu";
-            TaskbarIconCtxMenu.Size = new Size(104, 48);
+            TaskbarIconCtxMenu.Size = new Size(202, 76);
+            // 
+            // TitleMenuItem
+            // 
+            TitleMenuItem.Enabled = false;
+            TitleMenuItem.Name = "TitleMenuItem";
+            TitleMenuItem.Size = new Size(201, 22);
+            TitleMenuItem.Text = "Media Controller Helper";
+            // 
+            // TitleSeparator
+            // 
+            TitleSeparator.Name = "TitleSeparator";
+            TitleSeparator.Size = new Size(198, 6);
             // 
             // OpenMenuItem
             // 
             OpenMenuItem.Name = "OpenMenuItem";
-            OpenMenuItem.Size = new Size(103, 22);
+            OpenMenuItem.Size = new Size(201, 22);
             OpenMenuItem.Text = "Open";
             OpenMenuItem.Click += OpenMenuItem_Click;
             // 
             // QuitMenuItem
             // 
             QuitMenuItem.Name = "QuitMenuItem";
-            QuitMenuItem.Size = new Size(103, 22);
+            QuitMenuItem.Size = new Size(201, 22);
             QuitMenuItem.Text = "Exit";
             QuitMenuItem.Click += QuitMenuItem_Click;
             // 
@@ -191,5 +205,7 @@
         private Label PlayerPluginsLabel;
         private CheckBox iTunesSwitch;
         private CheckBox AppleMusicSwitch;
+        private ToolStripMenuItem TitleMenuItem;
+        private ToolStripSeparator TitleSeparator;
     }
 }
