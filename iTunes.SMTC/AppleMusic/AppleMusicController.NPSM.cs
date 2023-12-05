@@ -141,7 +141,9 @@ namespace iTunes.SMTC.AppleMusic
                     if (_npsmInfo.TrackData.Artist?.Contains(" — ") == true)
                     {
                         var artistAlbumInfos = _npsmInfo.TrackData.Artist.Split(" — ");
-                        if (artistAlbumInfos.Length == 2)
+
+                        // Note: If more than 2 than last part is likely station name
+                        if (artistAlbumInfos.Length >= 2)
                         {
                             _npsmInfo.TrackData.Artist = artistAlbumInfos[0];
                             _npsmInfo.TrackData.Album = artistAlbumInfos[1];
@@ -155,9 +157,9 @@ namespace iTunes.SMTC.AppleMusic
                 if (_npsmInfo != null)
                 {
                     updater.Type = MediaPlaybackType.Music;
-                    updater.MusicProperties.Title = _npsmInfo.TrackData.Name;
-                    updater.MusicProperties.Artist = _npsmInfo.TrackData.Artist;
-                    updater.MusicProperties.AlbumTitle = _npsmInfo.TrackData.Album;
+                    updater.MusicProperties.Title = _npsmInfo?.TrackData?.Name;
+                    updater.MusicProperties.Artist = _npsmInfo?.TrackData?.Artist;
+                    updater.MusicProperties.AlbumTitle = _npsmInfo?.TrackData?.Album;
 
                     if (thumbnailStream != null && thumbnailStream.Length > 0)
                     {
@@ -173,7 +175,7 @@ namespace iTunes.SMTC.AppleMusic
                         }
                     }
 
-                    _currentTrack = _npsmInfo.TrackData;
+                    _currentTrack = _npsmInfo?.TrackData;
                     _metadataEmpty = false;
                 }
                 else
