@@ -163,7 +163,7 @@ namespace iTunes.SMTC.AppleMusic
 
                     if (thumbnailStream != null && thumbnailStream.Length > 0)
                     {
-                        await SaveArtwork(thumbnailStream);
+                        SaveArtwork(thumbnailStream);
 
                         try
                         {

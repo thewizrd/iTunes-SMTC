@@ -191,7 +191,7 @@ namespace iTunes.SMTC.AppleMusic
 
         private void UpdateSMTCDisplay(AMPlayerInfo info)
         {
-            AMDispatcher.TryEnqueue(async () =>
+            AMDispatcher.TryEnqueue(() =>
             {
                 if (info != null)
                 {
@@ -242,7 +242,7 @@ namespace iTunes.SMTC.AppleMusic
                         updater.Update();
 
                         // Remove artwork
-                        await SaveArtwork(null);
+                        SaveArtwork(null);
                     }
 
                     if (info.TrackData != null)

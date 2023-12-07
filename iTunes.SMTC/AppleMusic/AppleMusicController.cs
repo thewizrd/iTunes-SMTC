@@ -72,15 +72,18 @@ namespace iTunes.SMTC.AppleMusic
                     // TODO: check SMTC
                     if (IsAppleMusicRunning())
                     {
-                        // Update SMTC display
-                        if (MediaSession != null)
+                        AMDispatcher.TryEnqueue(() =>
                         {
-                            UpdateSMTCExtras(GetAMPlayerInfo());
-                        }
-                        else
-                        {
-                            UpdateSMTCDisplay(GetAMPlayerInfo());
-                        }
+                            // Update SMTC display
+                            if (MediaSession != null)
+                            {
+                                UpdateSMTCExtras(GetAMPlayerInfo());
+                            }
+                            else
+                            {
+                                UpdateSMTCDisplay(GetAMPlayerInfo());
+                            }
+                        });
                     }
                     else
                     {
@@ -187,7 +190,7 @@ namespace iTunes.SMTC.AppleMusic
             SendAMPlayerCommand(AppleMusicControlButtons.Shuffle);
         }
 
-        private async Task SaveArtwork(Stream artworkStream)
+        private void SaveArtwork(Stream artworkStream)
         {
             if (_artworkUri == null)
             {
@@ -204,6 +207,18 @@ namespace iTunes.SMTC.AppleMusic
                 var ArtworkFilePath = Path.Combine(ArtworkFolderPath, "artwork.img");
                 _artworkUri = new Uri(ArtworkFilePath);
 #endif
+
+                try
+                {
+                    if (!File.Exists(_artworkUri.LocalPath))
+                    {
+                        File.Create(_artworkUri.LocalPath).Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Crashes.TrackError(ex);
+                }
             }
 
             try
@@ -211,10 +226,13 @@ namespace iTunes.SMTC.AppleMusic
                 if (artworkStream != null && artworkStream.Length != 0)
                 {
                     // Save to file
-                    var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
-                    using var fs = await file.OpenTransactedWriteAsync();
-                    await artworkStream.CopyToAsync(fs.Stream.AsStreamForWrite());
-                    await fs.CommitAsync();
+                    Task.Run(async () =>
+                    {
+                        var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
+                        using var fs = await file.OpenAsync(FileAccessMode.ReadWrite);
+                        await artworkStream.CopyToAsync(fs.AsStreamForWrite());
+                        await fs.FlushAsync();
+                    }).Wait();
                 }
                 else
                 {
