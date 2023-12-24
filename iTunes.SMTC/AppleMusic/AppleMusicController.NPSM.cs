@@ -14,6 +14,8 @@ namespace iTunes.SMTC.AppleMusic
         private MediaPlaybackDataSource MediaPlaybackSource;
         private NPSMInfo _npsmInfo;
 
+        private bool UseMediaSession = false;
+
         private void StartNPSMService()
         {
             if (NPSManager != null)
@@ -177,12 +179,14 @@ namespace iTunes.SMTC.AppleMusic
 
                     _currentTrack = _npsmInfo?.TrackData;
                     _metadataEmpty = false;
+                    UseMediaSession = (!_npsmInfo?.TrackData?.IsEmpty) ?? false;
                 }
                 else
                 {
                     _currentTrack = null;
                     _isPlaying = false;
                     _metadataEmpty = true;
+                    UseMediaSession = false;
                 }
 
                 _systemMediaTransportControls.IsEnabled = !_metadataEmpty;

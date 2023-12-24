@@ -3,8 +3,14 @@ using FlaUI.Core.Input;
 using FlaUI.UIA3;
 using iTunes.SMTC.AppleMusic.Model;
 using System.Diagnostics;
+using System.Drawing.Imaging;
+
+#if DEBUG || UNPACKAGEDDEBUG
 using System.Text;
+#endif
 using Windows.Media;
+using Windows.Storage;
+using Windows.Storage.Streams;
 
 namespace iTunes.SMTC.AppleMusic
 {
@@ -37,12 +43,12 @@ namespace iTunes.SMTC.AppleMusic
                         using var automation = new UIA3Automation();
                         var window = app.GetMainWindow(automation, waitTimeout: TimeSpan.FromSeconds(5));
 
-                    if (window?.Name == "Apple Music" && window.ClassName == "WinUIDesktopWin32WindowClass")
-                    {
-                        return window;
+                        if (window?.Name == "Apple Music" && window.ClassName == "WinUIDesktopWin32WindowClass")
+                        {
+                            return window;
+                        }
                     }
                 }
-            }
             }
             catch (TimeoutException)
             {
@@ -62,8 +68,8 @@ namespace iTunes.SMTC.AppleMusic
                 // Main Window Content
                 var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
 
-#if DEBUG
-                //LookForChildrenAndDescendants(content);
+#if DEBUG || UNPACKAGEDDEBUG
+                //LookForChildrenAndDescendants(content.FindFirstDescendant(cf => cf.ByAutomationId("LCD")));
 #endif
 
                 var shuffleBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("ShuffleButton"))?.AsToggleButton();
@@ -72,7 +78,8 @@ namespace iTunes.SMTC.AppleMusic
                 var skipFwdBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipForward"))?.AsButton();
                 var repeatBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("RepeatButton"))?.AsToggleButton();
 
-                var mediaTextDetails = content.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText"));
+                var thumbnailHoverGrid = content.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
+                var mediaTextDetails = content.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText").And(cf.ByClassName("TextBlock")));
                 var mediaDetailCount = mediaTextDetails?.Length ?? 0;
 
                 if (mediaDetailCount == 2)
@@ -85,6 +92,12 @@ namespace iTunes.SMTC.AppleMusic
                         Artist = artistAlbumTitles.FirstOrDefault(),
                         Album = artistAlbumTitles.ElementAtOrDefault(1)
                     };
+
+                    try
+                    {
+                        info.TrackData.Artwork = thumbnailHoverGrid?.Capture();
+                    }
+                    catch { }
                 }
 
                 info.ShuffleEnabled = shuffleBtn != null && shuffleBtn.IsAvailable && shuffleBtn.IsEnabled && shuffleBtn.ToggleState == FlaUI.Core.Definitions.ToggleState.On;
@@ -133,7 +146,8 @@ namespace iTunes.SMTC.AppleMusic
                     //progressSlider.Focus();
 
                     // Grab duration from slider (in seconds)
-                    info.TrackData.Duration = (int)progressSlider.Maximum;
+                    if (info.TrackData != null)
+                        info.TrackData.Duration = (int)progressSlider.Maximum;
                     info.TrackProgress = (int)progressSlider.Value;
 
                     /*
@@ -199,7 +213,7 @@ namespace iTunes.SMTC.AppleMusic
 
         private void UpdateSMTCDisplay(AMPlayerInfo info)
         {
-            AMDispatcher.TryEnqueue(() =>
+            AMDispatcher.TryEnqueue(async () =>
             {
                 if (info != null)
                 {
@@ -241,16 +255,48 @@ namespace iTunes.SMTC.AppleMusic
                             updater.MusicProperties.Artist = info.TrackData.Artist;
                             updater.MusicProperties.AlbumTitle = info.TrackData.Album;
                             _metadataEmpty = false;
+
+                            // Update artwork
+                            if (info.TrackData.Artwork != null && !info.TrackData.Artwork.Size.IsEmpty)
+                            {
+                                try
+                                {
+                                    var memoryStream = new MemoryStream();
+                                    info.TrackData.Artwork.Save(memoryStream, ImageFormat.Jpeg);
+                                    SaveArtwork(memoryStream);
+                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                }
+                                catch
+                                {
+                                    SaveArtwork(null);
+                                }
+                            }
+                            else
+                            {
+                                SaveArtwork(null);
+                            }
                         }
                         else
                         {
+                            if (!_metadataEmpty)
+                            {
+                                updater.Type = MediaPlaybackType.Music;
+                                updater.MusicProperties.Artist = "Media Controller";
+
+                                // Remove artwork
+                                SaveArtwork(null);
+
+                                try
+                                {
+                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                }
+                                catch { }
+                            }
+
                             _metadataEmpty = true;
                         }
 
                         updater.Update();
-
-                        // Remove artwork
-                        SaveArtwork(null);
                     }
 
                     if (info.TrackData != null)
@@ -390,7 +436,7 @@ namespace iTunes.SMTC.AppleMusic
             }
         }
 
-#if DEBUG
+#if DEBUG || UNPACKAGEDDEBUG
         private void LookForChildrenAndDescendants(AutomationElement content)
         {
             if (content != null)

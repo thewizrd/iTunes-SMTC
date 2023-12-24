@@ -12,7 +12,7 @@ namespace iTunes.SMTC.AppleMusic
     public partial class AppleMusicController : BaseController
     {
         private bool _isPlaying = false;
-        private bool _metadataEmpty = true;
+        private bool _metadataEmpty = false;
         private TrackMetadata _currentTrack;
 
         private readonly DispatcherQueueController AMDispatcherCtrl;
@@ -75,7 +75,7 @@ namespace iTunes.SMTC.AppleMusic
                         AMDispatcher.TryEnqueue(() =>
                         {
                             // Update SMTC display
-                            if (MediaSession != null)
+                            if (UseMediaSession)
                             {
                                 UpdateSMTCExtras(GetAMPlayerInfo());
                             }
@@ -88,6 +88,8 @@ namespace iTunes.SMTC.AppleMusic
                     else
                     {
                         // clear info
+                        _currentTrack?.Dispose();
+                        _currentTrack = null;
                     }
                 }
                 catch (Exception ex)
