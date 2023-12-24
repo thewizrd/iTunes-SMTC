@@ -1,4 +1,5 @@
 ﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Input;
 using FlaUI.UIA3;
 using iTunes.SMTC.AppleMusic.Model;
 using System.Diagnostics;
@@ -22,19 +23,26 @@ namespace iTunes.SMTC.AppleMusic
         {
             try
             {
-                var process = Process.GetProcessesByName("AppleMusic").FirstOrDefault();
+                var processes = Process.GetProcessesByName("AppleMusic");
+
+                // Check if app window is available and responding
+                var process = processes.FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero && p.Responding);
 
                 if (process != null)
                 {
                     var app = FlaUI.Core.Application.Attach(process);
 
-                    var window = app.GetMainWindow(new UIA3Automation(), waitTimeout: TimeSpan.FromSeconds(5));
+                    if (Wait.UntilResponsive(app.MainWindowHandle, TimeSpan.FromSeconds(5)))
+                    {
+                        using var automation = new UIA3Automation();
+                        var window = app.GetMainWindow(automation, waitTimeout: TimeSpan.FromSeconds(5));
 
                     if (window?.Name == "Apple Music" && window.ClassName == "WinUIDesktopWin32WindowClass")
                     {
                         return window;
                     }
                 }
+            }
             }
             catch (TimeoutException)
             {
