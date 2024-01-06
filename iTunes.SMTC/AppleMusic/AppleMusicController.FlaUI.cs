@@ -1,9 +1,12 @@
 ﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Exceptions;
 using FlaUI.Core.Input;
 using FlaUI.UIA3;
 using iTunes.SMTC.AppleMusic.Model;
 using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+
 
 #if DEBUG || UNPACKAGEDDEBUG
 using System.Text;
@@ -65,107 +68,118 @@ namespace iTunes.SMTC.AppleMusic
 
             if (window != null)
             {
-                // Main Window Content
-                var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
+                try
+                {
+                    // Main Window Content
+                    var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
 
 #if DEBUG || UNPACKAGEDDEBUG
-                //LookForChildrenAndDescendants(content.FindFirstDescendant(cf => cf.ByAutomationId("LCD")));
+                    //LookForChildrenAndDescendants(content.FindFirstDescendant(cf => cf.ByAutomationId("LCD")));
 #endif
 
-                var shuffleBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("ShuffleButton"))?.AsToggleButton();
-                var skipBackBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipBack"))?.AsButton();
-                var playPauseStopBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_PlayPauseStop"))?.AsButton();
-                var skipFwdBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipForward"))?.AsButton();
-                var repeatBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("RepeatButton"))?.AsToggleButton();
+                    var shuffleBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("ShuffleButton"))?.AsToggleButton();
+                    var skipBackBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipBack"))?.AsButton();
+                    var playPauseStopBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_PlayPauseStop"))?.AsButton();
+                    var skipFwdBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipForward"))?.AsButton();
+                    var repeatBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("RepeatButton"))?.AsToggleButton();
 
-                var thumbnailHoverGrid = content.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
-                var mediaTextDetails = content.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText").And(cf.ByClassName("TextBlock")));
-                var mediaDetailCount = mediaTextDetails?.Length ?? 0;
+                    var thumbnailHoverGrid = content.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
+                    var mediaTextDetails = content.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText").And(cf.ByClassName("TextBlock")));
+                    var mediaDetailCount = mediaTextDetails?.Length ?? 0;
 
-                if (mediaDetailCount == 2)
-                {
-                    var artistAlbumTitles = mediaTextDetails[1].Name?.Split(" — ");
-
-                    info.TrackData = new TrackMetadata()
+                    if (mediaDetailCount == 2)
                     {
-                        Name = mediaTextDetails[0].Name,
-                        Artist = artistAlbumTitles.FirstOrDefault(),
-                        Album = artistAlbumTitles.ElementAtOrDefault(1)
-                    };
+                        var artistAlbumTitles = mediaTextDetails[1].Name?.Split(" — ");
 
-                    try
-                    {
-                        info.TrackData.Artwork = thumbnailHoverGrid?.Capture();
+                        info.TrackData = new TrackMetadata()
+                        {
+                            Name = mediaTextDetails[0].Name,
+                            Artist = artistAlbumTitles.FirstOrDefault(),
+                            Album = artistAlbumTitles.ElementAtOrDefault(1)
+                        };
+
+                        try
+                        {
+                            info.TrackData.Artwork = thumbnailHoverGrid?.Capture();
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
 
-                info.ShuffleEnabled = shuffleBtn != null && shuffleBtn.IsAvailable && shuffleBtn.IsEnabled && shuffleBtn.ToggleState == FlaUI.Core.Definitions.ToggleState.On;
+                    info.ShuffleEnabled = shuffleBtn != null && shuffleBtn.IsAvailable && shuffleBtn.IsEnabled && shuffleBtn.ToggleState == FlaUI.Core.Definitions.ToggleState.On;
 
-                info.SkipBackEnabled = skipBackBtn != null && skipBackBtn.IsAvailable && skipBackBtn.IsEnabled;
+                    info.SkipBackEnabled = skipBackBtn != null && skipBackBtn.IsAvailable && skipBackBtn.IsEnabled;
 
-                if (playPauseStopBtn != null && playPauseStopBtn.IsAvailable && playPauseStopBtn.IsEnabled)
-                {
-                    info.IsPlaying = (playPauseStopBtn.Name == "Pause" || playPauseStopBtn.Name == "Stop");
-                    info.PlayPauseStopButtonState = playPauseStopBtn.Name switch
+                    if (playPauseStopBtn != null && playPauseStopBtn.IsAvailable && playPauseStopBtn.IsEnabled)
                     {
-                        "Play" => PlayPauseStopButtonState.Play,
-                        "Pause" => PlayPauseStopButtonState.Pause,
-                        "Stop" => PlayPauseStopButtonState.Stop,
-                        _ => PlayPauseStopButtonState.Unknown,
-                    };
-                }
-                else
-                {
-                    info.IsPlaying = false;
-                    info.PlayPauseStopButtonState = PlayPauseStopButtonState.Unknown;
-                }
-
-                info.SkipForwardEnabled = skipFwdBtn != null && skipFwdBtn.IsAvailable && skipFwdBtn.IsEnabled;
-
-                if (repeatBtn != null && repeatBtn.IsAvailable && repeatBtn.IsEnabled)
-                {
-                    info.RepeatMode = repeatBtn.ToggleState switch
-                    {
-                        FlaUI.Core.Definitions.ToggleState.Off => MediaPlaybackAutoRepeatMode.None,
-                        FlaUI.Core.Definitions.ToggleState.Indeterminate => MediaPlaybackAutoRepeatMode.Track,
-                        FlaUI.Core.Definitions.ToggleState.On => MediaPlaybackAutoRepeatMode.List,
-                        _ => MediaPlaybackAutoRepeatMode.None,
-                    };
-                }
-                else
-                {
-                    info.RepeatMode = MediaPlaybackAutoRepeatMode.None;
-                }
-
-                // Track Duration info
-                var progressSlider = content.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber"))?.AsSlider();
-                if (progressSlider != null)
-                {
-                    // Focus on slider to get time and duration
-                    //progressSlider.Focus();
-
-                    // Grab duration from slider (in seconds)
-                    if (info.TrackData != null)
-                        info.TrackData.Duration = (int)progressSlider.Maximum;
-                    info.TrackProgress = (int)progressSlider.Value;
-
-                    /*
-                    var currentTime = content.FindFirstDescendant(cf => cf.ByAutomationId("CurrentTime"));
-                    var duration = content.FindFirstDescendant(cf => cf.ByAutomationId("Duration"));
-
-                    if (!string.IsNullOrWhiteSpace(currentTime?.Name) && !string.IsNullOrWhiteSpace(duration?.Name))
-                    {
-                        // Time format: x:xx; x:xx:xx
-                        var currentTimeDur = ParseTime(currentTime.Name);
-                        var remainingDuration = ParseTime(duration.Name);
-
-                        var totalDuration = currentTimeDur + remainingDuration.Negate();
-
-                        info.TrackData.Duration = (int)totalDuration.TotalSeconds;
-                        info.TrackProgress = (int)currentTimeDur.TotalSeconds;
+                        info.IsPlaying = (playPauseStopBtn.Name == "Pause" || playPauseStopBtn.Name == "Stop");
+                        info.PlayPauseStopButtonState = playPauseStopBtn.Name switch
+                        {
+                            "Play" => PlayPauseStopButtonState.Play,
+                            "Pause" => PlayPauseStopButtonState.Pause,
+                            "Stop" => PlayPauseStopButtonState.Stop,
+                            _ => PlayPauseStopButtonState.Unknown,
+                        };
                     }
-                    */
+                    else
+                    {
+                        info.IsPlaying = false;
+                        info.PlayPauseStopButtonState = PlayPauseStopButtonState.Unknown;
+                    }
+
+                    info.SkipForwardEnabled = skipFwdBtn != null && skipFwdBtn.IsAvailable && skipFwdBtn.IsEnabled;
+
+                    if (repeatBtn != null && repeatBtn.IsAvailable && repeatBtn.IsEnabled)
+                    {
+                        info.RepeatMode = repeatBtn.ToggleState switch
+                        {
+                            FlaUI.Core.Definitions.ToggleState.Off => MediaPlaybackAutoRepeatMode.None,
+                            FlaUI.Core.Definitions.ToggleState.Indeterminate => MediaPlaybackAutoRepeatMode.Track,
+                            FlaUI.Core.Definitions.ToggleState.On => MediaPlaybackAutoRepeatMode.List,
+                            _ => MediaPlaybackAutoRepeatMode.None,
+                        };
+                    }
+                    else
+                    {
+                        info.RepeatMode = MediaPlaybackAutoRepeatMode.None;
+                    }
+
+                    // Track Duration info
+                    var progressSlider = content.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber"))?.AsSlider();
+                    if (progressSlider != null)
+                    {
+                        // Focus on slider to get time and duration
+                        //progressSlider.Focus();
+
+                        // Grab duration from slider (in seconds)
+                        if (info.TrackData != null)
+                            info.TrackData.Duration = (int)progressSlider.Maximum;
+                        info.TrackProgress = (int)progressSlider.Value;
+
+                        /*
+                        var currentTime = content.FindFirstDescendant(cf => cf.ByAutomationId("CurrentTime"));
+                        var duration = content.FindFirstDescendant(cf => cf.ByAutomationId("Duration"));
+
+                        if (!string.IsNullOrWhiteSpace(currentTime?.Name) && !string.IsNullOrWhiteSpace(duration?.Name))
+                        {
+                            // Time format: x:xx; x:xx:xx
+                            var currentTimeDur = ParseTime(currentTime.Name);
+                            var remainingDuration = ParseTime(duration.Name);
+
+                            var totalDuration = currentTimeDur + remainingDuration.Negate();
+
+                            info.TrackData.Duration = (int)totalDuration.TotalSeconds;
+                            info.TrackProgress = (int)currentTimeDur.TotalSeconds;
+                        }
+                        */
+                    }
+                }
+                catch (PropertyNotSupportedException)
+                {
+                    // may occur if window is no longer available
+                }
+                catch (COMException)
+                {
+                    // may occur if window is not responsive
                 }
             }
 
