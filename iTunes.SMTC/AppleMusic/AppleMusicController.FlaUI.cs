@@ -231,7 +231,7 @@ namespace iTunes.SMTC.AppleMusic
             {
                 if (info != null)
                 {
-                    _systemMediaTransportControls.PlaybackStatus = info.IsPlaying ? Windows.Media.MediaPlaybackStatus.Playing : (!string.IsNullOrEmpty(info.TrackData?.Name) ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Closed);
+                    _systemMediaTransportControls.PlaybackStatus = info.IsPlaying ? MediaPlaybackStatus.Playing : (!string.IsNullOrEmpty(info.TrackData?.Name) ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Closed);
                     _systemMediaTransportControls.IsEnabled = !string.IsNullOrEmpty(info?.TrackData?.Name);
 
                     _systemMediaTransportControls.ShuffleEnabled = info.ShuffleEnabled;
@@ -432,6 +432,11 @@ namespace iTunes.SMTC.AppleMusic
 
         private void UpdateAMPlayerPlaybackPosition(TimeSpan requestedPlaybackPosition)
         {
+            UpdateAMPlayerPlaybackPosition(requestedPlaybackPosition.TotalSeconds);
+        }
+
+        internal void UpdateAMPlayerPlaybackPosition(double timeInSeconds)
+        {
             // Poll for Apple Music window
             var window = FindAppleMusicWindow();
 
@@ -445,7 +450,7 @@ namespace iTunes.SMTC.AppleMusic
                 if (progressSlider != null)
                 {
                     // Set slider value (time in seconds)
-                    progressSlider.Value = requestedPlaybackPosition.TotalSeconds;
+                    progressSlider.Value = timeInSeconds;
                 }
             }
         }
