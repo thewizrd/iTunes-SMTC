@@ -164,6 +164,11 @@ namespace iTunes.SMTC.AppleMusic
                     else
                     {
                         SendAMPlayerCommand(command);
+
+                        if (PlayerStateChanged?.HasListeners() == true)
+                        {
+                            PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel());
+                        }
                     }
                     break;
                 case AppleMusicControlButtons.PlayPauseStop:
@@ -199,6 +204,11 @@ namespace iTunes.SMTC.AppleMusic
                 case AppleMusicControlButtons.Shuffle:
                 case AppleMusicControlButtons.Repeat:
                     SendAMPlayerCommand(command);
+
+                    if (PlayerStateChanged?.HasListeners() == true)
+                    {
+                        PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel());
+                    }
                     break;
             }
         }
@@ -209,26 +219,7 @@ namespace iTunes.SMTC.AppleMusic
 
             if (playerInfo.TrackData != null)
             {
-                var artwork = includeArtwork ? playerInfo.TrackData.Artwork : null;
-
-                return new PlayerStateModel()
-                {
-                    IsPlaying = playerInfo.IsPlaying,
-                    PlayPauseStopButtonState = playerInfo.PlayPauseStopButtonState,
-                    ShuffleEnabled = playerInfo.ShuffleEnabled,
-                    RepeatMode = playerInfo.RepeatMode,
-                    SkipBackEnabled = playerInfo.SkipBackEnabled,
-                    SkipForwardEnabled = playerInfo.SkipForwardEnabled,
-                    TrackData = new TrackModel()
-                    {
-                        Name = playerInfo.TrackData?.Name,
-                        Artist = playerInfo.TrackData?.Artist,
-                        Album = playerInfo.TrackData?.Album,
-                        Progress = playerInfo.TrackProgress,
-                        Duration = playerInfo.TrackData?.Duration ?? 0,
-                    },
-                    Artwork = artwork?.ToBytes()
-                };
+                return playerInfo.ToPlayerStateModel(includeArtwork);
             }
             else
             {

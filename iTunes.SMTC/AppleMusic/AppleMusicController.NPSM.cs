@@ -1,4 +1,5 @@
 ﻿using iTunes.SMTC.AppleMusic.Model;
+using iTunes.SMTC.Utils;
 using Microsoft.AppCenter.Crashes;
 using NPSMLib;
 using Windows.Media;
@@ -39,9 +40,24 @@ namespace iTunes.SMTC.AppleMusic
 
         private void NPSManager_SessionsChanged(object sender, NowPlayingSessionManagerEventArgs args)
         {
-            if (args.NotificationType != NowPlayingSessionManagerNotificationType.CurrentSessionChanged)
+            if (args.NotificationType == NowPlayingSessionManagerNotificationType.SessionCreated)
             {
-                ReloadSessions(sender as NowPlayingSessionManager ?? NPSManager);
+                // No sessions available; reload else ignore
+                if (MediaSession == null)
+                {
+                    ReloadSessions(sender as NowPlayingSessionManager ?? NPSManager);
+                }
+            }
+            else if (args.NotificationType == NowPlayingSessionManagerNotificationType.CurrentSessionChanged)
+            {
+                // ignore
+            }
+            else if (args.NotificationType == NowPlayingSessionManagerNotificationType.SessionDisconnected)
+            {
+                if (MediaSession != null && Equals(MediaSession.GetSessionInfo(), args.NowPlayingSessionInfo))
+                {
+                    ReloadSessions(sender as NowPlayingSessionManager ?? NPSManager);
+                }
             }
         }
 
@@ -71,6 +87,17 @@ namespace iTunes.SMTC.AppleMusic
                 _npsmInfo = new NPSMInfo();
 
                 UpdatePlayer(MediaPlaybackSource);
+
+                if (TrackChanged?.HasListeners() == true)
+                {
+                    AMDispatcher.TryEnqueue(() =>
+                    {
+                        if (UseMediaSession && _npsmInfo != null)
+                        {
+                            TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                        }
+                    });
+                }
             }
         }
 
@@ -208,6 +235,16 @@ namespace iTunes.SMTC.AppleMusic
                     MaxSeekTime = timelineProperties.MaxSeekTime,
                     MinSeekTime = timelineProperties.MinSeekTime
                 });
+
+                if (_npsmInfo != null)
+                {
+                    _npsmInfo.TrackProgress = (int)timelineProperties.Position.TotalSeconds;
+
+                    if (_npsmInfo.TrackData != null)
+                    {
+                        _npsmInfo.TrackData.Duration = (int)timelineProperties.EndTime.TotalSeconds;
+                    }
+                }
             });
         }
 
@@ -261,9 +298,17 @@ namespace iTunes.SMTC.AppleMusic
                     // Queue up notification
                     AMDispatcher.TryEnqueue(() =>
                     {
-                        if (!wasPlaying && _isPlaying && Settings.ShowTrackToast)
+                        if (!wasPlaying && _isPlaying)
                         {
-                            ShowToastNotification(_currentTrack);
+                            if (Settings.ShowTrackToast)
+                            {
+                                ShowToastNotification(_currentTrack);
+                            }
+
+                            if (PlayerStateChanged?.HasListeners() == true)
+                            {
+                                PlayerStateChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                            }
                         }
                     });
                     break;
@@ -274,9 +319,17 @@ namespace iTunes.SMTC.AppleMusic
                     // Queue up notification
                     AMDispatcher.TryEnqueue(() =>
                     {
-                        if ((prevTrack == null || !Equals(prevTrack, _currentTrack)) && Settings.ShowTrackToast)
+                        if ((prevTrack == null || !Equals(prevTrack, _currentTrack)))
                         {
-                            ShowToastNotification(_currentTrack);
+                            if (Settings.ShowTrackToast)
+                            {
+                                ShowToastNotification(_currentTrack);
+                            }
+
+                            if (TrackChanged?.HasListeners() == true)
+                            {
+                                TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                            }
                         }
                     });
                     break;

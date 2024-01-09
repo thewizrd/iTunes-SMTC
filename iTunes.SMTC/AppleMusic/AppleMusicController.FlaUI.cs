@@ -3,6 +3,7 @@ using FlaUI.Core.Exceptions;
 using FlaUI.Core.Input;
 using FlaUI.UIA3;
 using iTunes.SMTC.AppleMusic.Model;
+using iTunes.SMTC.Utils;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -323,9 +324,27 @@ namespace iTunes.SMTC.AppleMusic
                         });
                     }
 
-                    if ((trackChanged || _isPlaying != info.IsPlaying) && Settings.ShowTrackToast)
+                    if ((trackChanged || _isPlaying != info.IsPlaying))
                     {
-                        ShowToastNotification(info.TrackData);
+                        if (Settings.ShowTrackToast)
+                        {
+                            ShowToastNotification(info.TrackData);
+                        }
+
+                        if (trackChanged)
+                        {
+                            if (TrackChanged?.HasListeners() == true)
+                            {
+                                TrackChanged?.Invoke(this, info.ToPlayerStateModel(true));
+                            }
+                        }
+                        else if (_isPlaying != info.IsPlaying)
+                        {
+                            if (PlayerStateChanged?.HasListeners() == true)
+                            {
+                                PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
+                            }
+                        }
                     }
 
                     _isPlaying = info.IsPlaying;
@@ -346,6 +365,14 @@ namespace iTunes.SMTC.AppleMusic
 
                     _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties());
 
+                    if (_isPlaying || !_metadataEmpty)
+                    {
+                        if (TrackChanged?.HasListeners() == true)
+                        {
+                            TrackChanged?.Invoke(this, new PlayerStateModel());
+                        }
+                    }
+
                     _isPlaying = false;
                     _metadataEmpty = true;
                 }
@@ -356,13 +383,35 @@ namespace iTunes.SMTC.AppleMusic
         {
             if (info != null)
             {
+                var extrasChanged = (_systemMediaTransportControls.ShuffleEnabled != info.ShuffleEnabled) || (_systemMediaTransportControls.AutoRepeatMode != info.RepeatMode);
+
                 _systemMediaTransportControls.ShuffleEnabled = info.ShuffleEnabled;
                 _systemMediaTransportControls.AutoRepeatMode = info.RepeatMode;
+
+                if (_npsmInfo != null)
+                {
+                    _npsmInfo.ShuffleEnabled = info.ShuffleEnabled;
+                    _npsmInfo.RepeatMode = info.RepeatMode;
+                }
+
+                if (extrasChanged)
+                {
+                    if (PlayerStateChanged?.HasListeners() == true)
+                    {
+                        PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
+                    }
+                }
             }
             else
             {
                 _systemMediaTransportControls.ShuffleEnabled = false;
                 _systemMediaTransportControls.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
+
+                if (_npsmInfo != null)
+                {
+                    _npsmInfo.ShuffleEnabled = false;
+                    _npsmInfo.RepeatMode = MediaPlaybackAutoRepeatMode.None;
+                }
             }
         }
 

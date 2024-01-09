@@ -1,17 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using iTunes.SMTC.Http;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Collections.Concurrent;
 
 namespace iTunes.SMTC.AppleMusic
 {
     [ApiController]
     [Route("am-remote/[action]")]
-    public class AMRemoteController : ControllerBase
+    public class AMRemoteController : ControllerBase, IDisposable
     {
+        private static readonly ConcurrentDictionary<string, StreamWriter> sClients = new();
+
         private readonly AppleMusicController AMController;
 
         public AMRemoteController(AppleMusicController musicController)
         {
             AMController = musicController;
+            SubscribeToAMEvents();
         }
 
         [HttpGet]
@@ -52,6 +58,61 @@ namespace iTunes.SMTC.AppleMusic
         public IActionResult GetPing()
         {
             return Ok();
+        }
+
+        [HttpGet]
+        [ActionName("subscribe")]
+        [Produces("text/event-stream")]
+        [ResponseCache(NoStore = true)]
+        public IActionResult GetSubscription()
+        {
+            Response.StatusCode = 200;
+            Response.Headers.CacheControl = "no-cache";
+            Response.Headers.Connection = "keep-alive";
+            Response.Headers.ContentType = "text/event-stream";
+
+            return new PushStreamHttpResult(OnClientConnected, "text/event-stream");
+        }
+
+        private Task OnClientConnected(HttpContext context)
+        {
+            var waitHndl = context.RequestAborted.WaitHandle;
+
+            var client = new StreamWriter(context.Response.Body);
+            sClients.TryAdd(context.TraceIdentifier, client);
+
+            waitHndl.WaitOne();
+
+            sClients.TryRemove(context.TraceIdentifier, out var _);
+
+            return Task.CompletedTask;
+        }
+
+        private void SubscribeToAMEvents()
+        {
+            AMController.TrackChanged += AMController_PlayerStateUpdated;
+            AMController.PlayerStateChanged += AMController_PlayerStateUpdated;
+        }
+
+        private void AMController_PlayerStateUpdated(object sender, Model.PlayerStateModel e)
+        {
+            Task.Run(async () =>
+            {
+                foreach (var item in sClients)
+                {
+                    var client = item.Value;
+
+                    await client?.WriteLineAsync($"data: {System.Text.Json.JsonSerializer.Serialize(e)}");
+                    client?.WriteLine(); // data terminator (required)
+                    await client?.FlushAsync();
+                }
+            });
+        }
+
+        public void Dispose()
+        {
+            AMController.TrackChanged -= AMController_PlayerStateUpdated;
+            AMController.PlayerStateChanged -= AMController_PlayerStateUpdated;
         }
     }
 }

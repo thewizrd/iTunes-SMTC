@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using iTunes.SMTC.Utils;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Windows.Media;
 
@@ -34,5 +35,75 @@ namespace iTunes.SMTC.AppleMusic.Model
         /// Current progress on track in seconds
         /// </summary>
         public int Progress { get; set; }
+    }
+
+    public static class PlayerStateModelExtensions
+    {
+        public static PlayerStateModel ToPlayerStateModel(this AMPlayerInfo playerInfo, bool includeArtwork = false)
+        {
+            if (playerInfo.TrackData != null)
+            {
+                var artwork = includeArtwork ? playerInfo.TrackData.Artwork : null;
+
+                return new PlayerStateModel()
+                {
+                    IsPlaying = playerInfo.IsPlaying,
+                    PlayPauseStopButtonState = playerInfo.PlayPauseStopButtonState,
+                    ShuffleEnabled = playerInfo.ShuffleEnabled,
+                    RepeatMode = playerInfo.RepeatMode,
+                    SkipBackEnabled = playerInfo.SkipBackEnabled,
+                    SkipForwardEnabled = playerInfo.SkipForwardEnabled,
+                    TrackData = new TrackModel()
+                    {
+                        Name = playerInfo.TrackData?.Name,
+                        Artist = playerInfo.TrackData?.Artist,
+                        Album = playerInfo.TrackData?.Album,
+                        Progress = playerInfo.TrackProgress,
+                        Duration = playerInfo.TrackData?.Duration ?? 0,
+                    },
+                    Artwork = artwork?.ToBytes()
+                };
+            }
+            else
+            {
+                return new PlayerStateModel()
+                {
+                    IsPlaying = false
+                };
+            }
+        }
+        public static PlayerStateModel ToPlayerStateModel(this NPSMInfo playerInfo, bool includeArtwork = false)
+        {
+            if (playerInfo.TrackData != null)
+            {
+                var artwork = includeArtwork ? playerInfo.TrackData.Artwork : null;
+
+                return new PlayerStateModel()
+                {
+                    IsPlaying = playerInfo.IsPlaying,
+                    PlayPauseStopButtonState = playerInfo.IsPlaying ? PlayPauseStopButtonState.Pause : PlayPauseStopButtonState.Play,
+                    ShuffleEnabled = playerInfo.ShuffleEnabled,
+                    RepeatMode = playerInfo.RepeatMode,
+                    SkipBackEnabled = playerInfo.IsPreviousEnabled,
+                    SkipForwardEnabled = playerInfo.IsNextEnabled,
+                    TrackData = new TrackModel()
+                    {
+                        Name = playerInfo.TrackData?.Name,
+                        Artist = playerInfo.TrackData?.Artist,
+                        Album = playerInfo.TrackData?.Album,
+                        Progress = playerInfo.TrackProgress,
+                        Duration = playerInfo.TrackData?.Duration ?? 0,
+                    },
+                    Artwork = artwork?.ToBytes()
+                };
+            }
+            else
+            {
+                return new PlayerStateModel()
+                {
+                    IsPlaying = false
+                };
+            }
+        }
     }
 }
