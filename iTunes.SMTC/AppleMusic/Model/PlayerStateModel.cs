@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Windows.Media;
 
@@ -8,9 +8,9 @@ namespace iTunes.SMTC.AppleMusic.Model
     {
         public bool IsPlaying { get; set; }
         [JsonConverter(typeof(StringEnumConverter))]
-        public PlayPauseStopButtonState PlayPauseStopButtonState { get; set; }
+        public PlayPauseStopButtonState PlayPauseStopButtonState { get; set; } = PlayPauseStopButtonState.Unknown;
         [JsonConverter(typeof(StringEnumConverter))]
-        public MediaPlaybackAutoRepeatMode RepeatMode { get; set; }
+        public MediaPlaybackAutoRepeatMode RepeatMode { get; set; } = MediaPlaybackAutoRepeatMode.None;
         public bool ShuffleEnabled { get; set; }
         public bool SkipBackEnabled { get; set; }
         public bool SkipForwardEnabled { get; set; }

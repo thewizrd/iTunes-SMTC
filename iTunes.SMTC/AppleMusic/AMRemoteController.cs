@@ -103,12 +103,12 @@ namespace iTunes.SMTC.AppleMusic
             AMController.PlayerStateChanged += AMController_PlayerStateChanged;
         }
 
-        private void AMController_TrackChanged(object sender, Model.PlayerStateModel e)
+        private void AMController_TrackChanged(object sender, PlayerStateModel e)
         {
             PublishEvent(new EventMessage(EventType.TrackChange, e));
         }
 
-        private void AMController_PlayerStateChanged(object sender, Model.PlayerStateModel e)
+        private void AMController_PlayerStateChanged(object sender, PlayerStateModel e)
         {
             PublishEvent(new EventMessage(EventType.PlayerStateChanged, e));
         }

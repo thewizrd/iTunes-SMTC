@@ -201,7 +201,7 @@ namespace iTunes.SMTC.AppleMusic
                             if (_npsmInfo.TrackData != null)
                             {
                                 _npsmInfo.TrackData.Artwork = await updater.Thumbnail.ToBytes();
-                        }
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -297,49 +297,82 @@ namespace iTunes.SMTC.AppleMusic
             switch (e.DataChangedEvent)
             {
                 case MediaPlaybackDataChangedEvent.PlaybackInfoChanged:
-                    var wasPlaying = _isPlaying;
-                    UpdatePlaybackInfo(e.MediaPlaybackDataSource);
-
-                    // Queue up notification
-                    AMDispatcher.TryEnqueue(() =>
                     {
-                        if (!wasPlaying && _isPlaying)
+                        var wasPlaying = _isPlaying;
+                        UpdatePlaybackInfo(e.MediaPlaybackDataSource);
+
+                        // Queue up notification
+                        AMDispatcher.TryEnqueue(() =>
                         {
-                            if (Settings.ShowTrackToast)
+                            if (!wasPlaying && _isPlaying)
                             {
-                                ShowToastNotification(_currentTrack);
+                                if (Settings.ShowTrackToast)
+                                {
+                                    ShowToastNotification(_currentTrack);
+                                }
                             }
 
-                            if (PlayerStateChanged?.HasListeners() == true)
+                            if (((!wasPlaying && _isPlaying) || (!_isPlaying && wasPlaying)) && PlayerStateChanged?.HasListeners() == true)
                             {
-                                PlayerStateChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                                if (!UseMediaSession)
+                                {
+                                    PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
+                                }
+                                else
+                                {
+                                    PlayerStateChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                     break;
                 case MediaPlaybackDataChangedEvent.MediaInfoChanged:
-                    var prevTrack = _currentTrack?.Copy();
-                    UpdateMediaProperties(e.MediaPlaybackDataSource);
-
-                    // Queue up notification
-                    AMDispatcher.TryEnqueue(() =>
                     {
-                        if ((prevTrack == null || !Equals(prevTrack, _currentTrack)))
-                        {
-                            if (Settings.ShowTrackToast)
-                            {
-                                ShowToastNotification(_currentTrack);
-                            }
+                        var prevTrack = _currentTrack?.Copy();
+                        UpdateMediaProperties(e.MediaPlaybackDataSource);
 
-                            if (TrackChanged?.HasListeners() == true)
+                        // Queue up notification
+                        AMDispatcher.TryEnqueue(() =>
+                        {
+                            if ((prevTrack == null || !Equals(prevTrack, _currentTrack)))
                             {
-                                TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                                if (Settings.ShowTrackToast)
+                                {
+                                    ShowToastNotification(_currentTrack);
+                                }
+
+                                if (TrackChanged?.HasListeners() == true)
+                                {
+                                    TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                     break;
                 case MediaPlaybackDataChangedEvent.TimelinePropertiesChanged:
-                    UpdateTimeline(e.MediaPlaybackDataSource);
+                    {
+                        var prevTrack = _currentTrack?.Copy();
+                        UpdateTimeline(e.MediaPlaybackDataSource);
+
+                        // Queue up notification
+                        AMDispatcher.TryEnqueue(() =>
+                        {
+                            if (_currentTrack != null && _npsmInfo != null && Equals(prevTrack, _currentTrack) && (_npsmInfo.TrackProgress == 0 || _npsmInfo.TrackProgress == _currentTrack.Duration))
+                            {
+                                if (TrackChanged?.HasListeners() == true)
+                                {
+                                    if (!UseMediaSession)
+                                    {
+                                        TrackChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
+                                    }
+                                    else
+                                    {
+                                        TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                                    }
+                                }
+                            }
+                        });
+                    }
                     break;
             }
         }
