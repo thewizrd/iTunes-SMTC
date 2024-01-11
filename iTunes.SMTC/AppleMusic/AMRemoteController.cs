@@ -1,8 +1,11 @@
-﻿using iTunes.SMTC.Http;
+﻿using iTunes.SMTC.AppleMusic.Model;
+using iTunes.SMTC.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace iTunes.SMTC.AppleMusic
 {
@@ -11,6 +14,12 @@ namespace iTunes.SMTC.AppleMusic
     public class AMRemoteController : ControllerBase, IDisposable
     {
         private static readonly ConcurrentDictionary<string, StreamWriter> sClients = new();
+        private static readonly Lazy<JsonSerializerOptions> sSerializerOptions = new(() =>
+        {
+            var opts = new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            opts.Converters.Add(new JsonStringEnumConverter());
+            return opts;
+        }, true);
 
         private readonly AppleMusicController AMController;
 
@@ -90,11 +99,21 @@ namespace iTunes.SMTC.AppleMusic
 
         private void SubscribeToAMEvents()
         {
-            AMController.TrackChanged += AMController_PlayerStateUpdated;
-            AMController.PlayerStateChanged += AMController_PlayerStateUpdated;
+            AMController.TrackChanged += AMController_TrackChanged;
+            AMController.PlayerStateChanged += AMController_PlayerStateChanged;
         }
 
-        private void AMController_PlayerStateUpdated(object sender, Model.PlayerStateModel e)
+        private void AMController_TrackChanged(object sender, Model.PlayerStateModel e)
+        {
+            PublishEvent(new EventMessage(EventType.TrackChange, e));
+        }
+
+        private void AMController_PlayerStateChanged(object sender, Model.PlayerStateModel e)
+        {
+            PublishEvent(new EventMessage(EventType.PlayerStateChanged, e));
+        }
+
+        private static void PublishEvent(EventMessage @event)
         {
             Task.Run(async () =>
             {
@@ -102,7 +121,9 @@ namespace iTunes.SMTC.AppleMusic
                 {
                     var client = item.Value;
 
-                    await client?.WriteLineAsync($"data: {System.Text.Json.JsonSerializer.Serialize(e)}");
+                    var data = JsonSerializer.Serialize(@event, sSerializerOptions.Value);
+
+                    await client?.WriteLineAsync($"data: {data}");
                     client?.WriteLine(); // data terminator (required)
                     await client?.FlushAsync();
                 }
@@ -111,8 +132,8 @@ namespace iTunes.SMTC.AppleMusic
 
         public void Dispose()
         {
-            AMController.TrackChanged -= AMController_PlayerStateUpdated;
-            AMController.PlayerStateChanged -= AMController_PlayerStateUpdated;
+            AMController.TrackChanged -= AMController_TrackChanged;
+            AMController.PlayerStateChanged -= AMController_PlayerStateChanged;
         }
     }
 }
