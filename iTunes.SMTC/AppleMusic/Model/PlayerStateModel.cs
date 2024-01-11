@@ -1,4 +1,3 @@
-﻿using iTunes.SMTC.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Windows.Media;
@@ -61,7 +60,7 @@ namespace iTunes.SMTC.AppleMusic.Model
                         Progress = playerInfo.TrackProgress,
                         Duration = playerInfo.TrackData?.Duration ?? 0,
                     },
-                    Artwork = artwork?.ToBytes()
+                    Artwork = artwork
                 };
             }
             else
@@ -94,7 +93,7 @@ namespace iTunes.SMTC.AppleMusic.Model
                         Progress = playerInfo.TrackProgress,
                         Duration = playerInfo.TrackData?.Duration ?? 0,
                     },
-                    Artwork = artwork?.ToBytes()
+                    Artwork = artwork
                 };
             }
             else

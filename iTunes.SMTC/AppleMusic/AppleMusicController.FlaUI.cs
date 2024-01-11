@@ -5,7 +5,6 @@ using FlaUI.UIA3;
 using iTunes.SMTC.AppleMusic.Model;
 using iTunes.SMTC.Utils;
 using System.Diagnostics;
-using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
 
@@ -84,7 +83,7 @@ namespace iTunes.SMTC.AppleMusic
                     var skipFwdBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipForward"))?.AsButton();
                     var repeatBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("RepeatButton"))?.AsToggleButton();
 
-                    var thumbnailHoverGrid = content.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
+                    //var thumbnailHoverGrid = content.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
                     var mediaTextDetails = content.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText").And(cf.ByClassName("TextBlock")));
                     var mediaDetailCount = mediaTextDetails?.Length ?? 0;
 
@@ -99,11 +98,13 @@ namespace iTunes.SMTC.AppleMusic
                             Album = artistAlbumTitles.ElementAtOrDefault(1)
                         };
 
+                        /*
                         try
                         {
-                            info.TrackData.Artwork = thumbnailHoverGrid?.Capture();
+                            info.TrackData.Artwork = thumbnailHoverGrid?.Capture()?.ToBytes();
                         }
                         catch { }
+                        */
                     }
 
                     info.ShuffleEnabled = shuffleBtn != null && shuffleBtn.IsAvailable && shuffleBtn.IsEnabled && shuffleBtn.ToggleState == FlaUI.Core.Definitions.ToggleState.On;
@@ -272,13 +273,25 @@ namespace iTunes.SMTC.AppleMusic
                             _metadataEmpty = false;
 
                             // Update artwork
-                            if (info.TrackData.Artwork != null && !info.TrackData.Artwork.Size.IsEmpty)
+                            if (info.TrackData.Artwork is byte[] buf)
                             {
                                 try
                                 {
-                                    var memoryStream = new MemoryStream();
-                                    info.TrackData.Artwork.Save(memoryStream, ImageFormat.Jpeg);
+                                    using var memoryStream = new MemoryStream(buf, false);
                                     SaveArtwork(memoryStream);
+                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                }
+                                catch
+                                {
+                                    SaveArtwork(null);
+                                }
+                            }
+                            else if (!UseMediaSession && MediaPlaybackSource != null)
+                            {
+                                try
+                                {
+                                    SaveArtwork(MediaPlaybackSource.GetThumbnailStream());
+                                    info.TrackData.Artwork = _npsmInfo?.TrackData?.Artwork;
                                     updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
                                 }
                                 catch

@@ -91,7 +91,7 @@ namespace iTunes.SMTC.AppleMusic
                     else
                     {
                         // clear info
-                        _currentTrack?.Dispose();
+                        //_currentTrack?.Dispose();
                         _currentTrack = null;
                     }
                 }
@@ -219,6 +219,10 @@ namespace iTunes.SMTC.AppleMusic
 
             if (playerInfo.TrackData != null)
             {
+                if (includeArtwork)
+                {
+                    playerInfo.TrackData.Artwork = await GetArtwork();
+                }
                 return playerInfo.ToPlayerStateModel(includeArtwork);
             }
             else

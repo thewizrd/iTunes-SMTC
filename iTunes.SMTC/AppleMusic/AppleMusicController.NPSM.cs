@@ -197,6 +197,11 @@ namespace iTunes.SMTC.AppleMusic
                         try
                         {
                             updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+
+                            if (_npsmInfo.TrackData != null)
+                            {
+                                _npsmInfo.TrackData.Artwork = await updater.Thumbnail.ToBytes();
+                        }
                         }
                         catch (Exception ex)
                         {

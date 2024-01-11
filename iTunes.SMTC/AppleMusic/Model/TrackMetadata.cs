@@ -1,11 +1,11 @@
 ﻿namespace iTunes.SMTC.AppleMusic.Model
 {
-    public sealed class TrackMetadata : IDisposable
+    public sealed class TrackMetadata
     {
         public string Name { get; set; }
         public string Artist { get; set; }
         public string Album { get; set; }
-        public Bitmap Artwork { get; set; }
+        public byte[] Artwork { get; set; }
 
         /// <summary>
         /// Duration of track in seconds
@@ -30,11 +30,6 @@
         public TrackMetadata Copy()
         {
             return this.MemberwiseClone() as TrackMetadata;
-        }
-
-        public void Dispose()
-        {
-            Artwork?.Dispose();
         }
     }
 }
