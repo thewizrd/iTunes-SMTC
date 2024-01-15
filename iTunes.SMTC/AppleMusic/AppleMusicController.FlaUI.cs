@@ -256,6 +256,7 @@ namespace iTunes.SMTC.AppleMusic
                     _systemMediaTransportControls.IsPlayEnabled = true;
                     _systemMediaTransportControls.IsStopEnabled = true;
 
+                    var prevTrack = _currentTrack;
                     var trackChanged = _currentTrack == null || !Equals(info.TrackData, _currentTrack);
 
                     if (trackChanged)
@@ -345,8 +346,7 @@ namespace iTunes.SMTC.AppleMusic
                             ShowToastNotification(info.TrackData);
                         }
 
-                        // TODO: if nothing is playing we're spamming this event
-                        if (trackChanged)
+                        if (trackChanged && (prevTrack != null || _currentTrack != null))
                         {
                             if (TrackChanged?.HasListeners() == true)
                             {
