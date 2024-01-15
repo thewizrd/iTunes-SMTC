@@ -21,5 +21,7 @@ namespace iTunes.SMTC.AppleMusic.Model
         public int TrackProgress { get; set; }
         public bool ShuffleEnabled { get; set; }
         public MediaPlaybackAutoRepeatMode RepeatMode { get; set; } = MediaPlaybackAutoRepeatMode.None;
+
+        public bool IsRadio { get; set; }
     }
 }

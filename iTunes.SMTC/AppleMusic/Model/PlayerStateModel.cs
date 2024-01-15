@@ -17,6 +17,8 @@ namespace iTunes.SMTC.AppleMusic.Model
 
         public byte[] Artwork { get; set; }
         public TrackModel TrackData { get; set; }
+
+        public bool IsRadio { get; set; }
     }
 
     public class TrackModel
@@ -60,7 +62,8 @@ namespace iTunes.SMTC.AppleMusic.Model
                         Progress = playerInfo.TrackProgress,
                         Duration = playerInfo.TrackData?.Duration ?? 0,
                     },
-                    Artwork = artwork
+                    Artwork = artwork,
+                    IsRadio = playerInfo.IsRadio,
                 };
             }
             else

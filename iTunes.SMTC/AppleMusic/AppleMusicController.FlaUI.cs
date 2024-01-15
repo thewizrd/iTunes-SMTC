@@ -174,6 +174,11 @@ namespace iTunes.SMTC.AppleMusic
                         }
                         */
                     }
+
+                    if (content.FindFirstDescendant(cf => cf.ByName("LIVE")) is not null)
+                    {
+                        info.IsRadio = true;
+                    }
                 }
                 catch (PropertyNotSupportedException)
                 {
@@ -233,6 +238,11 @@ namespace iTunes.SMTC.AppleMusic
             {
                 if (info != null)
                 {
+                    var playerStateChanged = (_systemMediaTransportControls.ShuffleEnabled != info.ShuffleEnabled) ||
+                        (_systemMediaTransportControls.AutoRepeatMode != info.RepeatMode) ||
+                        (_systemMediaTransportControls.IsPreviousEnabled != info.SkipBackEnabled) ||
+                        (_systemMediaTransportControls.IsNextEnabled != info.SkipForwardEnabled);
+
                     _systemMediaTransportControls.PlaybackStatus = info.IsPlaying ? MediaPlaybackStatus.Playing : (!string.IsNullOrEmpty(info.TrackData?.Name) ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Closed);
                     _systemMediaTransportControls.IsEnabled = !string.IsNullOrEmpty(info?.TrackData?.Name);
 
@@ -242,18 +252,9 @@ namespace iTunes.SMTC.AppleMusic
                     _systemMediaTransportControls.IsPreviousEnabled = info.SkipBackEnabled;
                     _systemMediaTransportControls.IsNextEnabled = info.SkipForwardEnabled;
 
-                    if (info.PlayPauseStopButtonState == PlayPauseStopButtonState.Stop)
-                    {
-                        _systemMediaTransportControls.IsPauseEnabled = false;
-                        _systemMediaTransportControls.IsPlayEnabled = false;
-                        _systemMediaTransportControls.IsStopEnabled = true;
-                    }
-                    else
-                    {
-                        _systemMediaTransportControls.IsPauseEnabled = true;
-                        _systemMediaTransportControls.IsPlayEnabled = true;
-                        _systemMediaTransportControls.IsStopEnabled = false;
-                    }
+                    _systemMediaTransportControls.IsPauseEnabled = true;
+                    _systemMediaTransportControls.IsPlayEnabled = true;
+                    _systemMediaTransportControls.IsStopEnabled = true;
 
                     var trackChanged = _currentTrack == null || !Equals(info.TrackData, _currentTrack);
 
@@ -344,6 +345,7 @@ namespace iTunes.SMTC.AppleMusic
                             ShowToastNotification(info.TrackData);
                         }
 
+                        // TODO: if nothing is playing we're spamming this event
                         if (trackChanged)
                         {
                             if (TrackChanged?.HasListeners() == true)
@@ -357,6 +359,13 @@ namespace iTunes.SMTC.AppleMusic
                             {
                                 PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
                             }
+                        }
+                    }
+                    else if (playerStateChanged)
+                    {
+                        if (PlayerStateChanged?.HasListeners() == true)
+                        {
+                            PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
                         }
                     }
 
@@ -403,8 +412,11 @@ namespace iTunes.SMTC.AppleMusic
 
                 if (_npsmInfo != null)
                 {
+                    extrasChanged = extrasChanged || (_npsmInfo.IsRadio != info.IsRadio);
+
                     _npsmInfo.ShuffleEnabled = info.ShuffleEnabled;
                     _npsmInfo.RepeatMode = info.RepeatMode;
+                    _npsmInfo.IsRadio = info.IsRadio;
                 }
 
                 if (extrasChanged)
@@ -424,6 +436,7 @@ namespace iTunes.SMTC.AppleMusic
                 {
                     _npsmInfo.ShuffleEnabled = false;
                     _npsmInfo.RepeatMode = MediaPlaybackAutoRepeatMode.None;
+                    _npsmInfo.IsRadio = false;
                 }
             }
         }

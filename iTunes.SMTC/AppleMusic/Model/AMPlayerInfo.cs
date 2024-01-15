@@ -19,5 +19,7 @@ namespace iTunes.SMTC.AppleMusic.Model
         /// Current progress on track in seconds
         /// </summary>
         public int TrackProgress { get; set; }
+
+        public bool IsRadio { get; set; }
     }
 }
