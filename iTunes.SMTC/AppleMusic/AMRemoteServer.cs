@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -40,7 +41,11 @@ namespace iTunes.SMTC.AppleMusic
                         .UseKestrel((context, serverOptions) =>
                         {
                             serverOptions.Listen(IPAddress.Loopback, 0);
-                            serverOptions.ListenAnyIP(0);
+                            serverOptions.ListenAnyIP(0, listenOptions =>
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http1;
+                            });
+                            serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(60);
                         })
                         .ConfigureLogging((context, builder) =>
                         {

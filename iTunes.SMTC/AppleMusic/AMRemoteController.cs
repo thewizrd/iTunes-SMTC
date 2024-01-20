@@ -85,16 +85,17 @@ namespace iTunes.SMTC.AppleMusic
 
         private Task OnClientConnected(HttpContext context)
         {
-            var waitHndl = context.RequestAborted.WaitHandle;
+            return Task.Factory.StartNew(() =>
+            {
+                var waitHndl = context.RequestAborted.WaitHandle;
 
-            var client = new StreamWriter(context.Response.Body);
-            sClients.TryAdd(context.TraceIdentifier, client);
+                var client = new StreamWriter(context.Response.Body);
+                sClients.TryAdd(context.TraceIdentifier, client);
 
-            waitHndl.WaitOne();
+                waitHndl.WaitOne();
 
-            sClients.TryRemove(context.TraceIdentifier, out var _);
-
-            return Task.CompletedTask;
+                sClients.TryRemove(context.TraceIdentifier, out var _);
+            }, context.RequestAborted, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         private void SubscribeToAMEvents()
