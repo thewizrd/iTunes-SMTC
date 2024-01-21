@@ -2,6 +2,7 @@
 using iTunes.SMTC.Utils;
 using Microsoft.AppCenter.Crashes;
 using NPSMLib;
+using System;
 using Windows.Media;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -152,7 +153,7 @@ namespace iTunes.SMTC.AppleMusic
             var mediaObjectInfo = source.GetMediaObjectInfo();
             var thumbnailStream = source.GetThumbnailStream();
 
-            AMDispatcher.TryEnqueue(async () =>
+            AMDispatcher.TryEnqueue(() =>
             {
                 if (_npsmInfo != null)
                 {
@@ -192,21 +193,42 @@ namespace iTunes.SMTC.AppleMusic
 
                     if (thumbnailStream != null && thumbnailStream.Length > 0)
                     {
-                        SaveArtwork(thumbnailStream);
+                        ResetArtworkToken();
+                        var token = artworkCts.Token;
 
-                        try
+                        ArtworkDispatcher.TryEnqueue(async () =>
                         {
-                            updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                            await Task.Delay(500);
 
-                            if (_npsmInfo.TrackData != null)
+                            if (token.IsCancellationRequested) return;
+
+                            await SaveArtwork(thumbnailStream);
+
+                            try
                             {
-                                _npsmInfo.TrackData.Artwork = await updater.Thumbnail.ToBytes();
+                                if (token.IsCancellationRequested) return;
+
+                                updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+
+                                if (_npsmInfo.TrackData != null)
+                                {
+                                    _npsmInfo.TrackData.Artwork = await updater.Thumbnail.ToBytes();
+                                }
+
+                                updater.Update();
+
+                                if (token.IsCancellationRequested) return;
+
+                                if (ArtworkChanged?.HasListeners() == true)
+                                {
+                                    ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = (_npsmInfo?.TrackData?.Artwork ?? await updater.Thumbnail.ToBytes()) });
+                                }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Crashes.TrackError(ex);
-                        }
+                            catch (Exception ex)
+                            {
+                                Crashes.TrackError(ex);
+                            }
+                        });
                     }
 
                     _currentTrack = _npsmInfo?.TrackData;
@@ -341,10 +363,35 @@ namespace iTunes.SMTC.AppleMusic
                                     ShowToastNotification(_currentTrack);
                                 }
 
-                                if (TrackChanged?.HasListeners() == true)
+                                // Skip empty track events
+                                if (!(_isPlaying && _currentTrack?.IsEmpty == true) && TrackChanged?.HasListeners() == true)
                                 {
                                     TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
                                 }
+                            }
+                            else if (prevTrack != null && _currentTrack != null && prevTrack.Artwork?.AsSpan().SequenceEqual(_currentTrack.Artwork) != true)
+                            {
+                                ResetArtworkToken();
+                                var token = artworkCts.Token;
+
+                                // Check for artwork change
+                                ArtworkDispatcher.TryEnqueue(async () =>
+                                {
+                                    await Task.Delay(500);
+
+                                    if (token.IsCancellationRequested) return;
+
+                                    var updater = _systemMediaTransportControls.DisplayUpdater;
+                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                    updater.Update();
+
+                                    if (token.IsCancellationRequested) return;
+
+                                    if (ArtworkChanged?.HasListeners() == true)
+                                    {
+                                        ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
+                                    }
+                                });
                             }
                         });
                     }

@@ -19,6 +19,9 @@ namespace iTunes.SMTC.AppleMusic
         private readonly DispatcherQueueController AMDispatcherCtrl;
         private readonly DispatcherQueue AMDispatcher;
 
+        private readonly DispatcherQueueController ArtworkDispatcherCtrl;
+        private readonly DispatcherQueue ArtworkDispatcher;
+
         private Timer _statusTimer;
 
         public override string Key => "AMPreview";
@@ -26,12 +29,16 @@ namespace iTunes.SMTC.AppleMusic
 
         private Uri _artworkUri;
 
-        private CancellationTokenSource cts = null;
+        private CancellationTokenSource toastCts = null;
+        private CancellationTokenSource artworkCts = null;
 
         public AppleMusicController() : base()
         {
             AMDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
             AMDispatcher = AMDispatcherCtrl.DispatcherQueue;
+
+            ArtworkDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
+            ArtworkDispatcher = ArtworkDispatcherCtrl.DispatcherQueue;
         }
 
         protected override string GetNotificationTag() => "AMPreview.SMTC";
@@ -56,6 +63,12 @@ namespace iTunes.SMTC.AppleMusic
             {
                 _systemMediaTransportControls.IsEnabled = false;
             }
+
+            Task.Run(async () =>
+            {
+                await AMDispatcherCtrl.ShutdownQueueAsync();
+                await ArtworkDispatcherCtrl.ShutdownQueueAsync();
+            });
 
             base.Destroy();
         }
@@ -111,10 +124,16 @@ namespace iTunes.SMTC.AppleMusic
             return processes.Length > 0;
         }
 
-        private void ResetToken()
+        private void ResetToastToken()
         {
-            cts?.Cancel();
-            cts = new CancellationTokenSource();
+            toastCts?.Cancel();
+            toastCts = new CancellationTokenSource();
+        }
+
+        private void ResetArtworkToken()
+        {
+            artworkCts?.Cancel();
+            artworkCts = new CancellationTokenSource();
         }
 
         public override void OnSystemControlsAutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args)
@@ -295,7 +314,7 @@ namespace iTunes.SMTC.AppleMusic
             return null;
         }
 
-        private void SaveArtwork(Stream artworkStream)
+        private async Task SaveArtwork(Stream artworkStream)
         {
             if (_artworkUri == null)
             {
@@ -330,14 +349,10 @@ namespace iTunes.SMTC.AppleMusic
             {
                 if (artworkStream != null && artworkStream.Length != 0)
                 {
-                    // Save to file
-                    Task.Run(async () =>
-                    {
-                        var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
-                        using var fs = await file.OpenAsync(FileAccessMode.ReadWrite);
-                        await artworkStream.CopyToAsync(fs.AsStreamForWrite());
-                        await fs.FlushAsync();
-                    }).Wait();
+                    var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
+                    using var fs = await file.OpenAsync(FileAccessMode.ReadWrite);
+                    await artworkStream.CopyToAsync(fs.AsStreamForWrite());
+                    await fs.FlushAsync();
                 }
                 else
                 {
@@ -355,7 +370,7 @@ namespace iTunes.SMTC.AppleMusic
         {
             if (track != null)
             {
-                ResetToken();
+                ResetToastToken();
 
                 AMDispatcher.TryEnqueue(() =>
                 {
@@ -380,7 +395,7 @@ namespace iTunes.SMTC.AppleMusic
 
                             try
                             {
-                                await Task.Delay(5250, cts.Token);
+                                await Task.Delay(5250, toastCts.Token);
 
                                 ToastNotificationManagerCompat.History.Remove(t.Tag);
                             }

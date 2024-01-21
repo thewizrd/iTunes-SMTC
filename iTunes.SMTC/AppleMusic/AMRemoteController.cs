@@ -13,7 +13,7 @@ namespace iTunes.SMTC.AppleMusic
     [Route("am-remote/[action]")]
     public class AMRemoteController : ControllerBase, IDisposable
     {
-        private static readonly ConcurrentDictionary<string, StreamWriter> sClients = new();
+        private static readonly ConcurrentDictionary<string, TextWriter> sClients = new();
         private static readonly Lazy<JsonSerializerOptions> sSerializerOptions = new(() =>
         {
             var opts = new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -89,7 +89,7 @@ namespace iTunes.SMTC.AppleMusic
             {
                 var waitHndl = context.RequestAborted.WaitHandle;
 
-                var client = new StreamWriter(context.Response.Body);
+                var client = TextWriter.Synchronized(new StreamWriter(context.Response.Body));
                 sClients.TryAdd(context.TraceIdentifier, client);
 
                 waitHndl.WaitOne();
@@ -102,6 +102,7 @@ namespace iTunes.SMTC.AppleMusic
         {
             AMController.TrackChanged += AMController_TrackChanged;
             AMController.PlayerStateChanged += AMController_PlayerStateChanged;
+            AMController.ArtworkChanged += AMController_ArtworkChanged;
         }
 
         private void AMController_TrackChanged(object sender, PlayerStateModel e)
@@ -114,9 +115,14 @@ namespace iTunes.SMTC.AppleMusic
             PublishEvent(new EventMessage(EventType.PlayerStateChanged, e));
         }
 
+        private void AMController_ArtworkChanged(object sender, object artwork)
+        {
+            PublishEvent(new EventMessage(EventType.ArtworkChanged, artwork));
+        }
+
         private static void PublishEvent(EventMessage @event)
         {
-            Task.Run(async () =>
+            Task.Factory.StartNew(async () =>
             {
                 foreach (var item in sClients)
                 {
@@ -128,13 +134,14 @@ namespace iTunes.SMTC.AppleMusic
                     client?.WriteLine(); // data terminator (required)
                     await client?.FlushAsync();
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public void Dispose()
         {
             AMController.TrackChanged -= AMController_TrackChanged;
             AMController.PlayerStateChanged -= AMController_PlayerStateChanged;
+            AMController.ArtworkChanged -= AMController_ArtworkChanged;
         }
     }
 }

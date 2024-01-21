@@ -46,6 +46,7 @@ namespace iTunes.SMTC.AppleMusic
                                 listenOptions.Protocols = HttpProtocols.Http1;
                             });
                             serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(60);
+                            serverOptions.AllowSynchronousIO = true;
                         })
                         .ConfigureLogging((context, builder) =>
                         {

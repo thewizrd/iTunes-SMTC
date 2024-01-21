@@ -277,33 +277,93 @@ namespace iTunes.SMTC.AppleMusic
                             // Update artwork
                             if (info.TrackData.Artwork is byte[] buf)
                             {
+                                ResetArtworkToken();
+                                var token = artworkCts.Token;
+
                                 try
                                 {
-                                    using var memoryStream = new MemoryStream(buf, false);
-                                    SaveArtwork(memoryStream);
-                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                    ArtworkDispatcher.TryEnqueue(async () =>
+                                    {
+                                        await Task.Delay(500);
+
+                                        if (token.IsCancellationRequested) return;
+
+                                        using var memoryStream = new MemoryStream(buf, false);
+                                        await SaveArtwork(memoryStream);
+                                        updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                        updater.Update();
+
+                                        if (token.IsCancellationRequested) return;
+
+                                        if (ArtworkChanged?.HasListeners() == true)
+                                        {
+                                            ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
+                                        }
+                                    });
                                 }
                                 catch
                                 {
-                                    SaveArtwork(null);
+                                    ArtworkDispatcher.TryEnqueue(async () =>
+                                    {
+                                        await Task.Delay(500);
+
+                                        if (token.IsCancellationRequested) return;
+
+                                        await SaveArtwork(null);
+                                    });
                                 }
                             }
                             else if (!UseMediaSession && MediaPlaybackSource != null)
                             {
+                                ResetArtworkToken();
+                                var token = artworkCts.Token;
+
                                 try
                                 {
-                                    SaveArtwork(MediaPlaybackSource.GetThumbnailStream());
                                     info.TrackData.Artwork = _npsmInfo?.TrackData?.Artwork;
-                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                    ArtworkDispatcher.TryEnqueue(async () =>
+                                    {
+                                        await Task.Delay(500);
+
+                                        if (token.IsCancellationRequested) return;
+
+                                        await SaveArtwork(MediaPlaybackSource.GetThumbnailStream());
+                                        updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                        updater.Update();
+
+                                        if (token.IsCancellationRequested) return;
+
+                                        if (ArtworkChanged?.HasListeners() == true)
+                                        {
+                                            ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
+                                        }
+                                    });
                                 }
                                 catch
                                 {
-                                    SaveArtwork(null);
+                                    ArtworkDispatcher.TryEnqueue(async () =>
+                                    {
+                                        await Task.Delay(500);
+
+                                        if (token.IsCancellationRequested) return;
+
+                                        await SaveArtwork(null);
+                                    });
                                 }
                             }
                             else
                             {
-                                SaveArtwork(null);
+                                ResetArtworkToken();
+                                var token = artworkCts.Token;
+
+                                ArtworkDispatcher.TryEnqueue(async () =>
+                                {
+                                    await Task.Delay(500);
+
+                                    if (token.IsCancellationRequested) return;
+
+                                    await SaveArtwork(null);
+                                });
                             }
                         }
                         else
@@ -314,7 +374,17 @@ namespace iTunes.SMTC.AppleMusic
                                 updater.MusicProperties.Artist = "Media Controller";
 
                                 // Remove artwork
-                                SaveArtwork(null);
+                                ResetArtworkToken();
+                                var token = artworkCts.Token;
+
+                                ArtworkDispatcher.TryEnqueue(async () =>
+                                {
+                                    await Task.Delay(500);
+
+                                    if (token.IsCancellationRequested) return;
+
+                                    await SaveArtwork(null);
+                                });
 
                                 try
                                 {
