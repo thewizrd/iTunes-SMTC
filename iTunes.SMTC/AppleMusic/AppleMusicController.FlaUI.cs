@@ -46,7 +46,8 @@ namespace iTunes.SMTC.AppleMusic
                         using var automation = new UIA3Automation();
                         var window = app.GetMainWindow(automation, waitTimeout: TimeSpan.FromSeconds(5));
 
-                        if (window?.Name == "Apple Music" && window.ClassName == "WinUIDesktopWin32WindowClass")
+                        if ((window?.Name == "Apple Music" && window.ClassName == "WinUIDesktopWin32WindowClass") ||
+                            window?.Name == "MiniPlayer" || window?.Name == "Mini Player")
                         {
                             return window;
                         }
@@ -74,7 +75,10 @@ namespace iTunes.SMTC.AppleMusic
                     var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
 
 #if DEBUG || UNPACKAGEDDEBUG
-                    //LookForChildrenAndDescendants(content.FindFirstDescendant(cf => cf.ByAutomationId("LCD")));
+                    //var volumeBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
+                    //volumeBtn?.Click();
+                    //Wait.UntilInputIsProcessed(TimeSpan.FromSeconds(5));
+                    //LookForChildrenAndDescendants(window);
 #endif
 
                     var shuffleBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("ShuffleButton"))?.AsToggleButton();
