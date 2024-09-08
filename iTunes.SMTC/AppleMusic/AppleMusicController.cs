@@ -372,8 +372,10 @@ namespace iTunes.SMTC.AppleMusic
             {
                 ResetToastToken();
 
-                AMDispatcher.TryEnqueue(() =>
+                ArtworkDispatcher.TryEnqueue(async () =>
                 {
+                    await Task.Delay(500);
+
                     var notifTag = GetNotificationTag();
 
                     try
