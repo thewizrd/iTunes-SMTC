@@ -23,5 +23,6 @@ namespace iTunes.SMTC.AppleMusic.Model
         public MediaPlaybackAutoRepeatMode RepeatMode { get; set; } = MediaPlaybackAutoRepeatMode.None;
 
         public bool IsRadio { get; set; }
+        public VolumeState VolumeState { get; set; } = new VolumeState();
     }
 }

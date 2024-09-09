@@ -15,6 +15,7 @@ namespace iTunes.SMTC.AppleMusic
         private bool _isPlaying = false;
         private bool _metadataEmpty = false;
         private TrackMetadata _currentTrack;
+        private VolumeState _currentVolume;
 
         private readonly DispatcherQueueController AMDispatcherCtrl;
         private readonly DispatcherQueue AMDispatcher;
@@ -54,6 +55,7 @@ namespace iTunes.SMTC.AppleMusic
         {
             StopRemoteServer();
             StopNPSMService();
+            StopNAudioService();
             _statusTimer?.Stop();
 
             _isPlaying = false;
@@ -106,6 +108,7 @@ namespace iTunes.SMTC.AppleMusic
                         // clear info
                         //_currentTrack?.Dispose();
                         _currentTrack = null;
+                        _currentVolume = null;
                     }
                 }
                 catch (Exception ex)
@@ -115,6 +118,7 @@ namespace iTunes.SMTC.AppleMusic
             };
 
             StartNPSMService();
+            StartNAudioService();
         }
 
         private static bool IsAppleMusicRunning()

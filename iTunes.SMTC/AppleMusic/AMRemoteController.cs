@@ -62,6 +62,29 @@ namespace iTunes.SMTC.AppleMusic
             }
         }
 
+        [HttpPost]
+        [ActionName("volume")]
+        public IActionResult PostSetVolume([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Disallow)] float volume)
+        {
+            if (volume >= 0 && volume <= 1)
+            {
+                AMController.UpdateVolume(volume);
+                return Ok();
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPost]
+        [ActionName("mute")]
+        public IActionResult PostSetMute([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Disallow)] bool mute)
+        {
+            AMController.Mute(isMuted: mute);
+            return Ok();
+        }
+
         [HttpGet]
         [ActionName("ping")]
         public IActionResult GetPing()
@@ -103,6 +126,7 @@ namespace iTunes.SMTC.AppleMusic
             AMController.TrackChanged += AMController_TrackChanged;
             AMController.PlayerStateChanged += AMController_PlayerStateChanged;
             AMController.ArtworkChanged += AMController_ArtworkChanged;
+            AMController.VolumeStateChanged += AMController_VolumeChanged;
         }
 
         private void AMController_TrackChanged(object sender, PlayerStateModel e)
@@ -118,6 +142,11 @@ namespace iTunes.SMTC.AppleMusic
         private void AMController_ArtworkChanged(object sender, object artwork)
         {
             PublishEvent(new EventMessage(EventType.ArtworkChanged, artwork));
+        }
+
+        private void AMController_VolumeChanged(object sender, VolumeState e)
+        {
+            PublishEvent(new EventMessage(EventType.VolumeChanged, e));
         }
 
         private static void PublishEvent(EventMessage @event)
@@ -142,6 +171,7 @@ namespace iTunes.SMTC.AppleMusic
             AMController.TrackChanged -= AMController_TrackChanged;
             AMController.PlayerStateChanged -= AMController_PlayerStateChanged;
             AMController.ArtworkChanged -= AMController_ArtworkChanged;
+            AMController.VolumeStateChanged -= AMController_VolumeChanged;
         }
     }
 }

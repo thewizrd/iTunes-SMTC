@@ -183,6 +183,35 @@ namespace iTunes.SMTC.AppleMusic
                     {
                         info.IsRadio = true;
                     }
+
+                    // Volume slider
+                    /*
+                    var volumeBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
+                    if (volumeBtn != null)
+                    {
+                        var popupHost = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.PopupWindowSiteBridge"));
+                        var volumeFlyout = popupHost?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeFlyout"));
+                        var volumeSlider = volumeFlyout?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeSlider"))?.AsSlider();
+
+                        if (volumeSlider == null)
+                        {
+                            // Click button to bring up volume flyout
+                            volumeBtn.Click();
+                            Wait.UntilInputIsProcessed();
+                            popupHost ??= window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.PopupWindowSiteBridge"));
+                            volumeFlyout = popupHost?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeFlyout"));
+                            volumeSlider = volumeFlyout?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeSlider"))?.AsSlider();
+                        }
+
+                        if (volumeSlider != null)
+                        {
+                            info.VolumeState ??= new VolumeState();
+                            info.VolumeState.Volume = volumeSlider.Value;
+                            info.VolumeState.IsMuted = volumeSlider.Value == 0;
+                        }
+                    }
+                    */
+                    info.VolumeState = _currentVolume;
                 }
                 catch (PropertyNotSupportedException)
                 {
@@ -262,6 +291,7 @@ namespace iTunes.SMTC.AppleMusic
 
                     var prevTrack = _currentTrack;
                     var trackChanged = _currentTrack == null || !Equals(info.TrackData, _currentTrack);
+                    var volumeChanged = !Equals(info.VolumeState, _currentVolume);
 
                     if (trackChanged)
                     {
@@ -442,6 +472,13 @@ namespace iTunes.SMTC.AppleMusic
                             PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
                         }
                     }
+                    else if (volumeChanged)
+                    {
+                        if (VolumeStateChanged?.HasListeners() == true)
+                        {
+                            VolumeStateChanged?.Invoke(this, info.VolumeState);
+                        }
+                    }
 
                     _isPlaying = info.IsPlaying;
                 }
@@ -480,6 +517,7 @@ namespace iTunes.SMTC.AppleMusic
             if (info != null)
             {
                 var extrasChanged = (_systemMediaTransportControls.ShuffleEnabled != info.ShuffleEnabled) || (_systemMediaTransportControls.AutoRepeatMode != info.RepeatMode);
+                var volumeChanged = !Equals(info.VolumeState, _currentVolume);
 
                 _systemMediaTransportControls.ShuffleEnabled = info.ShuffleEnabled;
                 _systemMediaTransportControls.AutoRepeatMode = info.RepeatMode;
@@ -498,6 +536,14 @@ namespace iTunes.SMTC.AppleMusic
                     if (PlayerStateChanged?.HasListeners() == true)
                     {
                         PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
+                    }
+                }
+
+                if (volumeChanged)
+                {
+                    if (VolumeStateChanged?.HasListeners() == true)
+                    {
+                        VolumeStateChanged?.Invoke(this, info.VolumeState);
                     }
                 }
             }

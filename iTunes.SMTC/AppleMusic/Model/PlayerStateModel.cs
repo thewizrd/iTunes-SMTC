@@ -19,6 +19,8 @@ namespace iTunes.SMTC.AppleMusic.Model
         public TrackModel TrackData { get; set; }
 
         public bool IsRadio { get; set; }
+
+        public VolumeState VolumeState { get; set; }
     }
 
     public class TrackModel
@@ -64,6 +66,7 @@ namespace iTunes.SMTC.AppleMusic.Model
                     },
                     Artwork = artwork,
                     IsRadio = playerInfo.IsRadio,
+                    VolumeState = playerInfo.VolumeState,
                 };
             }
             else

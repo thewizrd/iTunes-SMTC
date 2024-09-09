@@ -2,7 +2,6 @@
 using iTunes.SMTC.Utils;
 using Microsoft.AppCenter.Crashes;
 using NPSMLib;
-using System;
 using Windows.Media;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -310,6 +309,8 @@ namespace iTunes.SMTC.AppleMusic
                             _ => MediaPlaybackStatus.Stopped,
                         };
                     }
+
+                    _npsmInfo.VolumeState = _currentVolume;
                 }
             });
         }

@@ -6,6 +6,7 @@ namespace iTunes.SMTC.AppleMusic
     {
         public event EventHandler<PlayerStateModel> TrackChanged;
         public event EventHandler<PlayerStateModel> PlayerStateChanged;
+        public event EventHandler<VolumeState> VolumeStateChanged;
         public event EventHandler<ArtworkModel> ArtworkChanged;
     }
 }

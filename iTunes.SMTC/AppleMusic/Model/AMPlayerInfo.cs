@@ -21,5 +21,7 @@ namespace iTunes.SMTC.AppleMusic.Model
         public int TrackProgress { get; set; }
 
         public bool IsRadio { get; set; }
+
+        public VolumeState VolumeState { get; set; }
     }
 }
