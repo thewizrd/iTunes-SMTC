@@ -190,7 +190,7 @@ namespace iTunes.SMTC.AppleMusic
                     updater.MusicProperties.Artist = _npsmInfo?.TrackData?.Artist;
                     updater.MusicProperties.AlbumTitle = _npsmInfo?.TrackData?.Album;
 
-                    if (thumbnailStream != null && thumbnailStream.Length > 0)
+                    if (thumbnailStream != null)
                     {
                         ResetArtworkToken();
                         var token = artworkCts.Token;

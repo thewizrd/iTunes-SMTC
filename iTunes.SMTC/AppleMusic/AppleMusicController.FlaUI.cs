@@ -1,12 +1,10 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
-using FlaUI.Core.Exceptions;
 using FlaUI.Core.Input;
 using FlaUI.UIA3;
 using iTunes.SMTC.AppleMusic.Model;
 using iTunes.SMTC.Utils;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 
 #if DEBUG || UNPACKAGEDDEBUG
@@ -219,13 +217,9 @@ namespace iTunes.SMTC.AppleMusic
                     */
                     info.VolumeState = _currentVolume;
                 }
-                catch (PropertyNotSupportedException)
+                catch (Exception)
                 {
-                    // may occur if window is no longer available
-                }
-                catch (COMException)
-                {
-                    // may occur if window is not responsive
+                    // may occur if window is no longer available or not responsive
                 }
             }
 

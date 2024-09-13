@@ -351,12 +351,13 @@ namespace iTunes.SMTC.AppleMusic
 
             try
             {
-                if (artworkStream != null && artworkStream.Length != 0)
+                if (artworkStream != null && artworkStream.Length > 0)
                 {
                     var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
-                    using var fs = await file.OpenAsync(FileAccessMode.ReadWrite);
-                    await artworkStream.CopyToAsync(fs.AsStreamForWrite());
-                    await fs.FlushAsync();
+                    var fs = await file.OpenAsync(FileAccessMode.ReadWrite);
+                    using var fsWrite = fs.AsStreamForWrite();
+                    await artworkStream.CopyToAsync(fsWrite);
+                    await fsWrite.FlushAsync();
                 }
                 else
                 {
