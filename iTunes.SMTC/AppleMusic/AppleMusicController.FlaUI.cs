@@ -1,4 +1,5 @@
 ﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Conditions;
 using FlaUI.Core.Exceptions;
 using FlaUI.Core.Input;
 using FlaUI.UIA3;
@@ -150,11 +151,12 @@ namespace iTunes.SMTC.AppleMusic
                     }
 
                     // Track Duration info
-                    var progressSlider = content.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber"))?.AsSlider();
+                    var progressSlider = content.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber").Or(new BoolCondition(IsMiniPlayer(window)).And(cf.ByAutomationId("Scrubber"))))?.AsSlider();
                     if (progressSlider != null)
                     {
                         // Focus on slider to get time and duration
                         //progressSlider.Focus();
+                        info.SeekEnabled = progressSlider.IsAvailable && progressSlider.IsEnabled;
 
                         // Grab duration from slider (in seconds)
                         if (info.TrackData != null)
@@ -177,6 +179,10 @@ namespace iTunes.SMTC.AppleMusic
                             info.TrackProgress = (int)currentTimeDur.TotalSeconds;
                         }
                         */
+                    }
+                    else
+                    {
+                        info.SeekEnabled = false;
                     }
 
                     if (content.FindFirstDescendant(cf => cf.ByName("LIVE")) is not null)
@@ -529,6 +535,7 @@ namespace iTunes.SMTC.AppleMusic
                     _npsmInfo.ShuffleEnabled = info.ShuffleEnabled;
                     _npsmInfo.RepeatMode = info.RepeatMode;
                     _npsmInfo.IsRadio = info.IsRadio;
+                    _npsmInfo.SeekEnabled = info.SeekEnabled;
                 }
 
                 if (extrasChanged)
@@ -557,6 +564,7 @@ namespace iTunes.SMTC.AppleMusic
                     _npsmInfo.ShuffleEnabled = false;
                     _npsmInfo.RepeatMode = MediaPlaybackAutoRepeatMode.None;
                     _npsmInfo.IsRadio = false;
+                    _npsmInfo.SeekEnabled = false;
                 }
             }
         }
@@ -640,14 +648,24 @@ namespace iTunes.SMTC.AppleMusic
                 // Main Window Content
                 var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
                 // Progress slider
-                var progressSlider = content?.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber"))?.AsSlider();
+                var progressSlider = content?.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber").Or(new BoolCondition(IsMiniPlayer(window)).And(cf.ByAutomationId("Scrubber"))))?.AsSlider();
 
                 if (progressSlider != null)
                 {
                     // Set slider value (time in seconds)
                     progressSlider.Value = timeInSeconds;
+
+                    if (PlaybackPositionChanged?.HasListeners() == true)
+                    {
+                        PlaybackPositionChanged?.Invoke(this, new TrackModel() { Progress = (int)timeInSeconds });
+                    }
                 }
             }
+        }
+
+        private static bool IsMiniPlayer(Window window)
+        {
+            return window?.Name == "MiniPlayer" || window?.Name == "Mini Player";
         }
 
 #if DEBUG || UNPACKAGEDDEBUG

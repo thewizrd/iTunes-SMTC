@@ -8,13 +8,13 @@ namespace iTunes.SMTC.AppleMusic.Model
 
         public bool IsPlaying { get; set; }
 
-        public bool IsPlaybackPositionEnabled { get; set; }
         public bool IsPreviousEnabled { get; set; }
         public bool IsNextEnabled { get; set; }
         public bool IsPlayEnabled { get; set; }
         public bool IsPauseEnabled { get; set; }
         public bool IsStopEnabled { get; set; }
 
+        public bool SeekEnabled { get; set; }
         /// <summary>
         /// Current progress on track in seconds
         /// </summary>

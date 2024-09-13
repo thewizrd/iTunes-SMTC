@@ -14,6 +14,7 @@ namespace iTunes.SMTC.AppleMusic.Model
 
         public bool SkipBackEnabled { get; set; }
         public bool SkipForwardEnabled { get; set; }
+        public bool SeekEnabled { get; set; }
 
         /// <summary>
         /// Current progress on track in seconds

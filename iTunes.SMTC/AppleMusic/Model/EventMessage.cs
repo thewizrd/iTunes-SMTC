@@ -15,6 +15,7 @@ namespace iTunes.SMTC.AppleMusic.Model
         TrackChange,
         PlayerStateChanged,
         ArtworkChanged,
-        VolumeChanged
+        VolumeChanged,
+        PlaybackPositionChanged
     }
 }

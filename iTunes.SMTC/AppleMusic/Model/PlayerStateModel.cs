@@ -14,6 +14,7 @@ namespace iTunes.SMTC.AppleMusic.Model
         public bool ShuffleEnabled { get; set; }
         public bool SkipBackEnabled { get; set; }
         public bool SkipForwardEnabled { get; set; }
+        public bool SeekEnabled { get; set; }
 
         public byte[] Artwork { get; set; }
         public TrackModel TrackData { get; set; }
@@ -56,6 +57,7 @@ namespace iTunes.SMTC.AppleMusic.Model
                     RepeatMode = playerInfo.RepeatMode,
                     SkipBackEnabled = playerInfo.SkipBackEnabled,
                     SkipForwardEnabled = playerInfo.SkipForwardEnabled,
+                    SeekEnabled = playerInfo.SeekEnabled,
                     TrackData = new TrackModel()
                     {
                         Name = playerInfo.TrackData?.Name,
@@ -91,6 +93,7 @@ namespace iTunes.SMTC.AppleMusic.Model
                     RepeatMode = playerInfo.RepeatMode,
                     SkipBackEnabled = playerInfo.IsPreviousEnabled,
                     SkipForwardEnabled = playerInfo.IsNextEnabled,
+                    SeekEnabled = playerInfo.SeekEnabled,
                     TrackData = new TrackModel()
                     {
                         Name = playerInfo.TrackData?.Name,

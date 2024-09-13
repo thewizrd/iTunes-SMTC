@@ -85,6 +85,21 @@ namespace iTunes.SMTC.AppleMusic
             return Ok();
         }
 
+        [HttpPost]
+        [ActionName("playbackPosition")]
+        public IActionResult PostSetPlaybackPosition([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Disallow)] double timeInSeconds)
+        {
+            if (double.IsFinite(timeInSeconds) && timeInSeconds >= 0)
+            {
+                AMController.UpdateAMPlayerPlaybackPosition(timeInSeconds);
+                return Ok();
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
         [HttpGet]
         [ActionName("ping")]
         public IActionResult GetPing()
@@ -127,6 +142,7 @@ namespace iTunes.SMTC.AppleMusic
             AMController.PlayerStateChanged += AMController_PlayerStateChanged;
             AMController.ArtworkChanged += AMController_ArtworkChanged;
             AMController.VolumeStateChanged += AMController_VolumeChanged;
+            AMController.PlaybackPositionChanged += AMController_PlaybackPositionChanged;
         }
 
         private void AMController_TrackChanged(object sender, PlayerStateModel e)
@@ -147,6 +163,11 @@ namespace iTunes.SMTC.AppleMusic
         private void AMController_VolumeChanged(object sender, VolumeState e)
         {
             PublishEvent(new EventMessage(EventType.VolumeChanged, e));
+        }
+
+        private void AMController_PlaybackPositionChanged(object sender, TrackModel e)
+        {
+            PublishEvent(new EventMessage(EventType.PlaybackPositionChanged, e));
         }
 
         private static void PublishEvent(EventMessage @event)
@@ -172,6 +193,7 @@ namespace iTunes.SMTC.AppleMusic
             AMController.PlayerStateChanged -= AMController_PlayerStateChanged;
             AMController.ArtworkChanged -= AMController_ArtworkChanged;
             AMController.VolumeStateChanged -= AMController_VolumeChanged;
+            AMController.PlaybackPositionChanged -= AMController_PlaybackPositionChanged;
         }
     }
 }
