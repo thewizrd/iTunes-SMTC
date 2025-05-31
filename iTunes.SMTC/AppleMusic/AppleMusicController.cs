@@ -1,6 +1,5 @@
 ﻿using iTunes.SMTC.AppleMusic.Model;
 using iTunes.SMTC.Utils;
-using Microsoft.AppCenter.Crashes;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.Diagnostics;
 using Windows.Media;
@@ -113,7 +112,7 @@ namespace iTunes.SMTC.AppleMusic
                 }
                 catch (Exception ex)
                 {
-                    Crashes.TrackError(ex);
+                    SentrySdk.CaptureException(ex);
                 }
             };
 
@@ -345,7 +344,7 @@ namespace iTunes.SMTC.AppleMusic
                 }
                 catch (Exception ex)
                 {
-                    Crashes.TrackError(ex);
+                    SentrySdk.CaptureException(ex);
                 }
             }
 
@@ -367,7 +366,7 @@ namespace iTunes.SMTC.AppleMusic
             }
             catch (Exception ex)
             {
-                Crashes.TrackError(ex);
+                SentrySdk.CaptureException(ex);
             }
         }
 

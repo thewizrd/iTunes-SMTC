@@ -27,7 +27,6 @@
             OpenMenuItem = new ToolStripMenuItem();
             QuitMenuItem = new ToolStripMenuItem();
             VersionCodeText = new Label();
-            CrashReportSwitch = new CheckBox();
             PlayerPluginsLabel = new Label();
             iTunesSwitch = new CheckBox();
             AppleMusicSwitch = new CheckBox();
@@ -48,7 +47,7 @@
             // FormTitle
             // 
             FormTitle.AutoSize = true;
-            FormTitle.Font = new Font("Segoe UI Semibold", 15F, FontStyle.Regular, GraphicsUnit.Point);
+            FormTitle.Font = new Font("Segoe UI Semibold", 15F);
             FormTitle.Location = new Point(9, 9);
             FormTitle.Margin = new Padding(0, 0, 0, 10);
             FormTitle.Name = "FormTitle";
@@ -110,7 +109,7 @@
             // VersionCodeText
             // 
             VersionCodeText.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            VersionCodeText.Location = new Point(201, 239);
+            VersionCodeText.Location = new Point(201, 204);
             VersionCodeText.Margin = new Padding(0);
             VersionCodeText.Name = "VersionCodeText";
             VersionCodeText.Size = new Size(83, 23);
@@ -118,22 +117,11 @@
             VersionCodeText.Text = "v1.0.0.0";
             VersionCodeText.TextAlign = ContentAlignment.MiddleRight;
             // 
-            // CrashReportSwitch
-            // 
-            CrashReportSwitch.AutoSize = true;
-            CrashReportSwitch.Location = new Point(19, 110);
-            CrashReportSwitch.Margin = new Padding(10, 5, 10, 5);
-            CrashReportSwitch.Name = "CrashReportSwitch";
-            CrashReportSwitch.Size = new Size(144, 19);
-            CrashReportSwitch.TabIndex = 4;
-            CrashReportSwitch.Text = "Enable crash reporting";
-            CrashReportSwitch.UseVisualStyleBackColor = true;
-            // 
             // PlayerPluginsLabel
             // 
             PlayerPluginsLabel.AutoSize = true;
-            PlayerPluginsLabel.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Regular, GraphicsUnit.Point);
-            PlayerPluginsLabel.Location = new Point(9, 144);
+            PlayerPluginsLabel.Font = new Font("Segoe UI Semibold", 10F);
+            PlayerPluginsLabel.Location = new Point(9, 115);
             PlayerPluginsLabel.Margin = new Padding(0, 10, 0, 10);
             PlayerPluginsLabel.Name = "PlayerPluginsLabel";
             PlayerPluginsLabel.Size = new Size(122, 19);
@@ -145,10 +133,10 @@
             iTunesSwitch.AutoSize = true;
             iTunesSwitch.Checked = true;
             iTunesSwitch.CheckState = CheckState.Checked;
-            iTunesSwitch.Location = new Point(19, 178);
+            iTunesSwitch.Location = new Point(19, 149);
             iTunesSwitch.Margin = new Padding(10, 5, 10, 5);
             iTunesSwitch.Name = "iTunesSwitch";
-            iTunesSwitch.Size = new Size(60, 19);
+            iTunesSwitch.Size = new Size(61, 19);
             iTunesSwitch.TabIndex = 6;
             iTunesSwitch.Tag = "iTunes";
             iTunesSwitch.Text = "iTunes";
@@ -157,7 +145,7 @@
             // AppleMusicSwitch
             // 
             AppleMusicSwitch.AutoSize = true;
-            AppleMusicSwitch.Location = new Point(19, 207);
+            AppleMusicSwitch.Location = new Point(19, 178);
             AppleMusicSwitch.Margin = new Padding(10, 5, 10, 5);
             AppleMusicSwitch.Name = "AppleMusicSwitch";
             AppleMusicSwitch.Size = new Size(144, 19);
@@ -170,11 +158,10 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(284, 261);
+            ClientSize = new Size(284, 226);
             Controls.Add(AppleMusicSwitch);
             Controls.Add(iTunesSwitch);
             Controls.Add(PlayerPluginsLabel);
-            Controls.Add(CrashReportSwitch);
             Controls.Add(VersionCodeText);
             Controls.Add(StartupSwitch);
             Controls.Add(FormTitle);
@@ -201,7 +188,6 @@
         private ToolStripMenuItem OpenMenuItem;
         private ToolStripMenuItem QuitMenuItem;
         private Label VersionCodeText;
-        private CheckBox CrashReportSwitch;
         private Label PlayerPluginsLabel;
         private CheckBox iTunesSwitch;
         private CheckBox AppleMusicSwitch;

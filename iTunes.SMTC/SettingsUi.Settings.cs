@@ -1,5 +1,4 @@
-﻿using Microsoft.AppCenter.Crashes;
-#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
+﻿#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
 using Microsoft.Win32.TaskScheduler;
 using System.Reflection;
 using System.Security.Principal;
@@ -14,7 +13,7 @@ namespace iTunes.SMTC
         private const string TASK_NAME = "iTunes.SMTC";
 
 #if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
-        private string GetTaskName()
+        private static string GetTaskName()
         {
             return $"{TASK_NAME} {WindowsIdentity.GetCurrent().Name.Replace(@"\", "")}";
         }
@@ -26,15 +25,17 @@ namespace iTunes.SMTC
             TrackNotificationSwitch.CheckedChanged += TrackNotificationSwitch_CheckedChanged;
             StartupSwitch.Checked = Settings.OpenOnStartup;
             StartupSwitch.CheckedChanged += StartupSwitch_CheckedChanged;
-            CrashReportSwitch.Checked = Settings.EnableCrashReporting;
-            CrashReportSwitch.CheckedChanged += CrashReportSwitch_CheckedChanged;
             iTunesSwitch.Checked = Settings.EnableiTunesController;
             iTunesSwitch.CheckedChanged += iTunesSwitch_CheckedChanged;
             AppleMusicSwitch.Checked = Settings.EnableAppleMusicController;
             AppleMusicSwitch.CheckedChanged += AppleMusicSwitch_CheckedChanged;
         }
 
+#if UNPACKAGEDDEBUG || UNPACKAGEDRELEASE
+        private void StartupSwitch_CheckedChanged(object sender, EventArgs e)
+#else
         private async void StartupSwitch_CheckedChanged(object sender, EventArgs e)
+#endif
         {
             var oldValue = Settings.OpenOnStartup;
             var newValue = !oldValue;
@@ -87,12 +88,6 @@ namespace iTunes.SMTC
         private void TrackNotificationSwitch_CheckedChanged(object sender, EventArgs e)
         {
             Settings.ShowTrackToast = !Settings.ShowTrackToast;
-        }
-
-        private async void CrashReportSwitch_CheckedChanged(object sender, EventArgs e)
-        {
-            var newValue = Settings.EnableCrashReporting = !Settings.EnableCrashReporting;
-            await Crashes.SetEnabledAsync(newValue);
         }
 
         private void iTunesSwitch_CheckedChanged(object sender, EventArgs e)

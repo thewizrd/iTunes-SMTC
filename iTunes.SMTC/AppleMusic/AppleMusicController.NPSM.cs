@@ -1,6 +1,5 @@
 ﻿using iTunes.SMTC.AppleMusic.Model;
 using iTunes.SMTC.Utils;
-using Microsoft.AppCenter.Crashes;
 using NPSMLib;
 using Windows.Media;
 using Windows.Storage;
@@ -32,7 +31,7 @@ namespace iTunes.SMTC.AppleMusic
             }
             catch (Exception ex)
             {
-                Crashes.TrackError(ex);
+                SentrySdk.CaptureException(ex);
                 // Fallback
                 _statusTimer?.Start();
             }
@@ -112,7 +111,7 @@ namespace iTunes.SMTC.AppleMusic
                 }
                 catch (Exception ex)
                 {
-                    Crashes.TrackError(ex);
+                    SentrySdk.CaptureException(ex);
                 }
             }
 
@@ -131,7 +130,7 @@ namespace iTunes.SMTC.AppleMusic
                 }
                 catch (Exception ex)
                 {
-                    Crashes.TrackError(ex);
+                    SentrySdk.CaptureException(ex);
                 }
             }
 
@@ -225,7 +224,7 @@ namespace iTunes.SMTC.AppleMusic
                             }
                             catch (Exception ex)
                             {
-                                Crashes.TrackError(ex);
+                                SentrySdk.CaptureException(ex);
                             }
                         });
                     }

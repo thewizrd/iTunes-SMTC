@@ -1,7 +1,6 @@
 ﻿using iTunes.SMTC.iTunes.Extensions;
 using iTunes.SMTC.iTunes.Model;
 using iTunesLib;
-using Microsoft.AppCenter.Crashes;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -180,7 +179,7 @@ namespace iTunes.SMTC.iTunes
             }
             catch (Exception ex)
             {
-                Crashes.TrackError(ex);
+                SentrySdk.CaptureException(ex);
             }
         }
 
@@ -217,7 +216,7 @@ namespace iTunes.SMTC.iTunes
             }
             catch (Exception ex)
             {
-                Crashes.TrackError(ex);
+                SentrySdk.CaptureException(ex);
             }
         }
 
@@ -598,7 +597,7 @@ namespace iTunes.SMTC.iTunes
                     }
                     catch (Exception ex)
                     {
-                        Crashes.TrackError(ex);
+                        SentrySdk.CaptureException(ex);
                     }
 
                     _metadataEmpty = false;

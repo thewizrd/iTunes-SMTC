@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AppCenter.Crashes;
 using iTunes.SMTC.iTunes.Model;
 
 namespace iTunes.SMTC.iTunes.Extensions
@@ -31,7 +30,7 @@ namespace iTunes.SMTC.iTunes.Extensions
             }
             catch (Exception ex)
             {
-                Crashes.TrackError(ex);
+                SentrySdk.CaptureException(ex);
             }
 
             return metadata;
