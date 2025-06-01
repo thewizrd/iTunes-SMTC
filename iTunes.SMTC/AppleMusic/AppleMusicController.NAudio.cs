@@ -12,6 +12,8 @@ namespace iTunes.SMTC.AppleMusic
         private AudioSessionManager MMAudioSessionManager;
         private AudioSessionControl MMAudioSession;
 
+        private const string AUDIO_SESSION_PROCESS = "AMPLibraryAgent";
+
         private void StartNAudioService()
         {
             if (MMDeviceEnumerator != null)
@@ -54,7 +56,7 @@ namespace iTunes.SMTC.AppleMusic
                     MMAudioSessionManager = MMDevice.AudioSessionManager;
                     MMAudioSessionManager.OnSessionCreated += MMAudioSessionManager_OnSessionCreated;
 
-                    var amplProcess = Process.GetProcessesByName("AMPLibraryAgent")?.FirstOrDefault();
+                    var amplProcess = Process.GetProcessesByName(AUDIO_SESSION_PROCESS)?.FirstOrDefault();
 
                     if (amplProcess != null)
                     {
@@ -79,7 +81,7 @@ namespace iTunes.SMTC.AppleMusic
 
         private void MMAudioSessionManager_OnSessionCreated(object sender, IAudioSessionControl newSession)
         {
-            var amplProcess = Process.GetProcessesByName("AMPLibraryAgent")?.FirstOrDefault();
+            var amplProcess = Process.GetProcessesByName(AUDIO_SESSION_PROCESS)?.FirstOrDefault();
 
             if (amplProcess != null && newSession is AudioSessionControl ctrl && ctrl.GetProcessID == amplProcess.Id)
             {

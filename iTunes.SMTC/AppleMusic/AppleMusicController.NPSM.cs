@@ -1,9 +1,11 @@
 ﻿using iTunes.SMTC.AppleMusic.Model;
 using iTunes.SMTC.Utils;
 using NPSMLib;
+using System.Diagnostics;
 using Windows.Media;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Windows.System;
 
 namespace iTunes.SMTC.AppleMusic
 {
@@ -89,13 +91,10 @@ namespace iTunes.SMTC.AppleMusic
 
                 if (TrackChanged?.HasListeners() == true)
                 {
-                    AMDispatcher.TryEnqueue(() =>
+                    if (UseMediaSession && _npsmInfo != null)
                     {
-                        if (UseMediaSession && _npsmInfo != null)
-                        {
-                            TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
-                        }
-                    });
+                        TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                    }
                 }
             }
         }
@@ -151,167 +150,156 @@ namespace iTunes.SMTC.AppleMusic
             var mediaObjectInfo = source.GetMediaObjectInfo();
             var thumbnailStream = source.GetThumbnailStream();
 
-            AMDispatcher.TryEnqueue(() =>
+            if (_npsmInfo != null)
             {
-                if (_npsmInfo != null)
+                _npsmInfo.TrackData.Name = mediaObjectInfo.Title;
+                _npsmInfo.TrackData.Artist = mediaObjectInfo.Artist;
+                _npsmInfo.TrackData.Album = mediaObjectInfo.AlbumTitle;
+
+                if (string.IsNullOrWhiteSpace(_npsmInfo.TrackData.Artist) && !string.IsNullOrWhiteSpace(mediaObjectInfo.AlbumArtist))
                 {
-                    _npsmInfo.TrackData.Name = mediaObjectInfo.Title;
-                    _npsmInfo.TrackData.Artist = mediaObjectInfo.Artist;
-                    _npsmInfo.TrackData.Album = mediaObjectInfo.AlbumTitle;
-
-                    if (string.IsNullOrWhiteSpace(_npsmInfo.TrackData.Artist) && !string.IsNullOrWhiteSpace(mediaObjectInfo.AlbumArtist))
-                    {
-                        _npsmInfo.TrackData.Artist = mediaObjectInfo.AlbumArtist;
-                    }
-
-                    // Artist and Album name are sent together separated by " — " character
-                    // Split the two to get the names separately
-                    if (_npsmInfo.TrackData.Artist?.Contains(" — ") == true)
-                    {
-                        var artistAlbumInfos = _npsmInfo.TrackData.Artist.Split(" — ");
-
-                        // Note: If more than 2 than last part is likely station name
-                        if (artistAlbumInfos.Length >= 2)
-                        {
-                            _npsmInfo.TrackData.Artist = artistAlbumInfos[0];
-                            _npsmInfo.TrackData.Album = artistAlbumInfos[1];
-                        }
-                    }
+                    _npsmInfo.TrackData.Artist = mediaObjectInfo.AlbumArtist;
                 }
 
-                SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
-                updater.ClearAll();
-
-                if (_npsmInfo != null)
+                // Artist and Album name are sent together separated by " — " character
+                // Split the two to get the names separately
+                if (_npsmInfo.TrackData.Artist?.Contains(" — ") == true)
                 {
-                    updater.Type = MediaPlaybackType.Music;
-                    updater.MusicProperties.Title = _npsmInfo?.TrackData?.Name;
-                    updater.MusicProperties.Artist = _npsmInfo?.TrackData?.Artist;
-                    updater.MusicProperties.AlbumTitle = _npsmInfo?.TrackData?.Album;
+                    var artistAlbumInfos = _npsmInfo.TrackData.Artist.Split(" — ");
 
-                    if (thumbnailStream != null)
+                    // Note: If more than 2 than last part is likely station name
+                    if (artistAlbumInfos.Length >= 2)
                     {
-                        ResetArtworkToken();
-                        var token = artworkCts.Token;
+                        _npsmInfo.TrackData.Artist = artistAlbumInfos[0];
+                        _npsmInfo.TrackData.Album = artistAlbumInfos[1];
+                    }
+                }
+            }
 
-                        ArtworkDispatcher.TryEnqueue(async () =>
+            SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
+            updater.ClearAll();
+
+            if (_npsmInfo != null)
+            {
+                updater.Type = MediaPlaybackType.Music;
+                updater.MusicProperties.Title = _npsmInfo?.TrackData?.Name;
+                updater.MusicProperties.Artist = _npsmInfo?.TrackData?.Artist;
+                updater.MusicProperties.AlbumTitle = _npsmInfo?.TrackData?.Album;
+
+                if (thumbnailStream != null)
+                {
+                    ResetArtworkToken();
+                    var token = artworkCts.Token;
+
+                    ArtworkDispatcher.TryEnqueue(async () =>
+                    {
+                        if (token.IsCancellationRequested) return;
+
+                        var file = await SaveArtwork(thumbnailStream);
+
+                        try
                         {
-                            await Task.Delay(500);
+                            if (token.IsCancellationRequested) return;
+
+                            updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(file);
+
+                            if (_npsmInfo.TrackData != null)
+                            {
+                                _npsmInfo.TrackData.Artwork = await updater.Thumbnail.ToBytes();
+                            }
+
+                            updater.Update();
 
                             if (token.IsCancellationRequested) return;
 
-                            await SaveArtwork(thumbnailStream);
-
-                            try
+                            if (ArtworkChanged?.HasListeners() == true)
                             {
-                                if (token.IsCancellationRequested) return;
-
-                                updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
-
-                                if (_npsmInfo.TrackData != null)
-                                {
-                                    _npsmInfo.TrackData.Artwork = await updater.Thumbnail.ToBytes();
-                                }
-
-                                updater.Update();
-
-                                if (token.IsCancellationRequested) return;
-
-                                if (ArtworkChanged?.HasListeners() == true)
-                                {
-                                    ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = (_npsmInfo?.TrackData?.Artwork ?? await updater.Thumbnail.ToBytes()) });
-                                }
+                                ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = (_npsmInfo?.TrackData?.Artwork ?? await updater.Thumbnail.ToBytes()) });
                             }
-                            catch (Exception ex)
-                            {
-                                SentrySdk.CaptureException(ex);
-                            }
-                        });
-                    }
-
-                    _currentTrack = _npsmInfo?.TrackData;
-                    _metadataEmpty = false;
-                    UseMediaSession = (!_npsmInfo?.TrackData?.IsEmpty) ?? false;
-                }
-                else
-                {
-                    _currentTrack = null;
-                    _isPlaying = false;
-                    _metadataEmpty = true;
-                    UseMediaSession = false;
+                        }
+                        catch (Exception ex)
+                        {
+                            SentrySdk.CaptureException(ex);
+                        }
+                    });
                 }
 
-                _systemMediaTransportControls.IsEnabled = !_metadataEmpty;
-                updater.Update();
-            });
+                _currentTrack = _npsmInfo?.TrackData;
+                _metadataEmpty = false;
+                UseMediaSession = (!_npsmInfo?.TrackData?.IsEmpty) ?? false;
+            }
+            else
+            {
+                _currentTrack = null;
+                _isPlaying = false;
+                _metadataEmpty = true;
+                UseMediaSession = false;
+            }
+
+            _systemMediaTransportControls.IsEnabled = !_metadataEmpty;
+            updater.Update();
         }
 
         private void UpdateTimeline(MediaPlaybackDataSource source)
         {
             var timelineProperties = source.GetMediaTimelineProperties();
 
-            AMDispatcher.TryEnqueue(() =>
+            _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties()
             {
-                _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties()
-                {
-                    StartTime = timelineProperties.StartTime,
-                    EndTime = timelineProperties.EndTime,
-                    Position = timelineProperties.Position,
-                    MaxSeekTime = timelineProperties.MaxSeekTime,
-                    MinSeekTime = timelineProperties.MinSeekTime
-                });
-
-                if (_npsmInfo != null)
-                {
-                    _npsmInfo.TrackProgress = (int)timelineProperties.Position.TotalSeconds;
-
-                    if (_npsmInfo.TrackData != null)
-                    {
-                        _npsmInfo.TrackData.Duration = (int)timelineProperties.EndTime.TotalSeconds;
-                    }
-                }
+                StartTime = timelineProperties.StartTime,
+                EndTime = timelineProperties.EndTime,
+                Position = timelineProperties.Position,
+                MaxSeekTime = timelineProperties.MaxSeekTime,
+                MinSeekTime = timelineProperties.MinSeekTime
             });
+
+            if (_npsmInfo != null)
+            {
+                _npsmInfo.TrackProgress = (int)timelineProperties.Position.TotalSeconds;
+
+                if (_npsmInfo.TrackData != null)
+                {
+                    _npsmInfo.TrackData.Duration = (int)timelineProperties.EndTime.TotalSeconds;
+                }
+            }
         }
 
         private void UpdatePlaybackInfo(MediaPlaybackDataSource source)
         {
             var playbackInfo = source.GetMediaPlaybackInfo();
 
-            AMDispatcher.TryEnqueue(() =>
+            var playerCapabilities = playbackInfo.PlaybackCaps;
+            var playerValidProps = playbackInfo.PropsValid;
+
+            if (_npsmInfo != null)
             {
-                var playerCapabilities = playbackInfo.PlaybackCaps;
-                var playerValidProps = playbackInfo.PropsValid;
-
-                if (_npsmInfo != null)
+                _isPlaying = _npsmInfo.IsPlaying = (playerValidProps.HasFlag(MediaPlaybackProps.State) ? playbackInfo.PlaybackState : MediaPlaybackState.Unknown) switch
                 {
-                    _isPlaying = _npsmInfo.IsPlaying = (playerValidProps.HasFlag(MediaPlaybackProps.State) ? playbackInfo.PlaybackState : MediaPlaybackState.Unknown) switch
+                    MediaPlaybackState.Playing => true,
+                    _ => false,
+                };
+
+                _systemMediaTransportControls.IsPreviousEnabled = _npsmInfo.IsPreviousEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Previous);
+                _systemMediaTransportControls.IsNextEnabled = _npsmInfo.IsNextEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Next);
+                _systemMediaTransportControls.IsPauseEnabled = _npsmInfo.IsPauseEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.PlayPauseToggle);
+                _systemMediaTransportControls.IsPlayEnabled = _npsmInfo.IsPlayEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Play);
+                _systemMediaTransportControls.IsStopEnabled = _npsmInfo.IsStopEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Stop);
+
+                if (playerValidProps.HasFlag(MediaPlaybackProps.State))
+                {
+                    _systemMediaTransportControls.PlaybackStatus = playbackInfo.PlaybackState switch
                     {
-                        MediaPlaybackState.Playing => true,
-                        _ => false,
+                        MediaPlaybackState.Closed => MediaPlaybackStatus.Closed,
+                        MediaPlaybackState.Opened => MediaPlaybackStatus.Paused,
+                        MediaPlaybackState.Changing => MediaPlaybackStatus.Changing,
+                        MediaPlaybackState.Playing => MediaPlaybackStatus.Playing,
+                        MediaPlaybackState.Paused => MediaPlaybackStatus.Paused,
+                        _ => MediaPlaybackStatus.Stopped,
                     };
-
-                    _systemMediaTransportControls.IsPreviousEnabled = _npsmInfo.IsPreviousEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Previous);
-                    _systemMediaTransportControls.IsNextEnabled = _npsmInfo.IsNextEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Next);
-                    _systemMediaTransportControls.IsPauseEnabled = _npsmInfo.IsPauseEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.PlayPauseToggle);
-                    _systemMediaTransportControls.IsPlayEnabled = _npsmInfo.IsPlayEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Play);
-                    _systemMediaTransportControls.IsStopEnabled = _npsmInfo.IsStopEnabled = playerCapabilities.HasFlag(MediaPlaybackCapabilities.Stop);
-
-                    if (playerValidProps.HasFlag(MediaPlaybackProps.State))
-                    {
-                        _systemMediaTransportControls.PlaybackStatus = playbackInfo.PlaybackState switch
-                        {
-                            MediaPlaybackState.Closed => MediaPlaybackStatus.Closed,
-                            MediaPlaybackState.Opened => MediaPlaybackStatus.Paused,
-                            MediaPlaybackState.Changing => MediaPlaybackStatus.Changing,
-                            MediaPlaybackState.Playing => MediaPlaybackStatus.Playing,
-                            MediaPlaybackState.Paused => MediaPlaybackStatus.Paused,
-                            _ => MediaPlaybackStatus.Stopped,
-                        };
-                    }
-
-                    _npsmInfo.VolumeState = _currentVolume;
                 }
-            });
+
+                _npsmInfo.VolumeState = _currentVolume;
+            }
         }
 
         private void MediaPlaybackSource_MediaPlaybackDataChanged(object sender, MediaPlaybackDataChangedArgs e)
@@ -324,28 +312,25 @@ namespace iTunes.SMTC.AppleMusic
                         UpdatePlaybackInfo(e.MediaPlaybackDataSource);
 
                         // Queue up notification
-                        AMDispatcher.TryEnqueue(() =>
+                        if (!wasPlaying && _isPlaying)
                         {
-                            if (!wasPlaying && _isPlaying)
+                            if (Settings.ShowTrackToast)
                             {
-                                if (Settings.ShowTrackToast)
-                                {
-                                    ShowToastNotification(_currentTrack);
-                                }
+                                ShowToastNotification(_currentTrack);
                             }
+                        }
 
-                            if (((!wasPlaying && _isPlaying) || (!_isPlaying && wasPlaying)) && PlayerStateChanged?.HasListeners() == true)
+                        if (((!wasPlaying && _isPlaying) || (!_isPlaying && wasPlaying)) && PlayerStateChanged?.HasListeners() == true)
+                        {
+                            if (!UseMediaSession)
                             {
-                                if (!UseMediaSession)
-                                {
-                                    PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
-                                }
-                                else
-                                {
-                                    PlayerStateChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
-                                }
+                                PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
                             }
-                        });
+                            else
+                            {
+                                PlayerStateChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                            }
+                        }
                     }
                     break;
                 case MediaPlaybackDataChangedEvent.MediaInfoChanged:
@@ -354,46 +339,43 @@ namespace iTunes.SMTC.AppleMusic
                         UpdateMediaProperties(e.MediaPlaybackDataSource);
 
                         // Queue up notification
-                        AMDispatcher.TryEnqueue(() =>
+                        if ((prevTrack == null || !Equals(prevTrack, _currentTrack)))
                         {
-                            if ((prevTrack == null || !Equals(prevTrack, _currentTrack)))
+                            if (Settings.ShowTrackToast)
                             {
-                                if (Settings.ShowTrackToast)
-                                {
-                                    ShowToastNotification(_currentTrack);
-                                }
-
-                                // Skip empty track events
-                                if (!(_isPlaying && _currentTrack?.IsEmpty == true) && TrackChanged?.HasListeners() == true)
-                                {
-                                    TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
-                                }
+                                ShowToastNotification(_currentTrack);
                             }
-                            else if (prevTrack != null && _currentTrack != null && prevTrack.Artwork?.AsSpan().SequenceEqual(_currentTrack.Artwork) != true)
+
+                            // Skip empty track events
+                            if (!(_isPlaying && _currentTrack?.IsEmpty == true) && TrackChanged?.HasListeners() == true)
                             {
-                                ResetArtworkToken();
-                                var token = artworkCts.Token;
-
-                                // Check for artwork change
-                                ArtworkDispatcher.TryEnqueue(async () =>
-                                {
-                                    await Task.Delay(500);
-
-                                    if (token.IsCancellationRequested) return;
-
-                                    var updater = _systemMediaTransportControls.DisplayUpdater;
-                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
-                                    updater.Update();
-
-                                    if (token.IsCancellationRequested) return;
-
-                                    if (ArtworkChanged?.HasListeners() == true)
-                                    {
-                                        ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
-                                    }
-                                });
+                                TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
                             }
-                        });
+                        }
+                        else if (prevTrack != null && _currentTrack != null && prevTrack.Artwork?.AsSpan().SequenceEqual(_currentTrack.Artwork) != true)
+                        {
+                            ResetArtworkToken();
+                            var token = artworkCts.Token;
+
+                            // Check for artwork change
+                            ArtworkDispatcher.TryEnqueue(async () =>
+                            {
+                                if (token.IsCancellationRequested) return;
+
+                                var updater = _systemMediaTransportControls.DisplayUpdater;
+                                updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
+                                updater.Update();
+
+                                _currentTrack.Artwork = await updater.Thumbnail.ToBytes();
+
+                                if (token.IsCancellationRequested) return;
+
+                                if (ArtworkChanged?.HasListeners() == true)
+                                {
+                                    ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
+                                }
+                            });
+                        }
                     }
                     break;
                 case MediaPlaybackDataChangedEvent.TimelinePropertiesChanged:
@@ -402,23 +384,20 @@ namespace iTunes.SMTC.AppleMusic
                         UpdateTimeline(e.MediaPlaybackDataSource);
 
                         // Queue up notification
-                        AMDispatcher.TryEnqueue(() =>
+                        if (_currentTrack != null && _npsmInfo != null && Equals(prevTrack, _currentTrack) && (_npsmInfo.TrackProgress == 0 || _npsmInfo.TrackProgress == _currentTrack.Duration))
                         {
-                            if (_currentTrack != null && _npsmInfo != null && Equals(prevTrack, _currentTrack) && (_npsmInfo.TrackProgress == 0 || _npsmInfo.TrackProgress == _currentTrack.Duration))
+                            if (TrackChanged?.HasListeners() == true)
                             {
-                                if (TrackChanged?.HasListeners() == true)
+                                if (!UseMediaSession)
                                 {
-                                    if (!UseMediaSession)
-                                    {
-                                        TrackChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
-                                    }
-                                    else
-                                    {
-                                        TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
-                                    }
+                                    TrackChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
+                                }
+                                else
+                                {
+                                    TrackChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
                                 }
                             }
-                        });
+                        }
                     }
                     break;
             }

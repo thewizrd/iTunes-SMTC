@@ -722,13 +722,14 @@ namespace iTunes.SMTC.iTunes
             if (disposing)
             {
                 // Dispose managed state (managed objects)
+                iTunesDispatcherCtrl.ShutdownQueueAsync();
+
+                Destroy();
                 _delayStartTimer?.Stop();
                 _statusTimer?.Stop();
 
                 _delayStartTimer?.Dispose();
                 _statusTimer?.Dispose();
-
-                iTunesDispatcherCtrl.ShutdownQueueAsync();
 
                 _currentTrack?.Dispose();
             }

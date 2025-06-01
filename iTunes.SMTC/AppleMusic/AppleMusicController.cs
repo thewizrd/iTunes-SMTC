@@ -16,9 +16,6 @@ namespace iTunes.SMTC.AppleMusic
         private TrackMetadata _currentTrack;
         private VolumeState _currentVolume;
 
-        private readonly DispatcherQueueController AMDispatcherCtrl;
-        private readonly DispatcherQueue AMDispatcher;
-
         private readonly DispatcherQueueController ArtworkDispatcherCtrl;
         private readonly DispatcherQueue ArtworkDispatcher;
 
@@ -34,9 +31,6 @@ namespace iTunes.SMTC.AppleMusic
 
         public AppleMusicController() : base()
         {
-            AMDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
-            AMDispatcher = AMDispatcherCtrl.DispatcherQueue;
-
             ArtworkDispatcherCtrl = DispatcherQueueController.CreateOnDedicatedThread();
             ArtworkDispatcher = ArtworkDispatcherCtrl.DispatcherQueue;
         }
@@ -65,12 +59,6 @@ namespace iTunes.SMTC.AppleMusic
                 _systemMediaTransportControls.IsEnabled = false;
             }
 
-            Task.Run(async () =>
-            {
-                await AMDispatcherCtrl.ShutdownQueueAsync();
-                await ArtworkDispatcherCtrl.ShutdownQueueAsync();
-            });
-
             base.Destroy();
         }
 
@@ -86,21 +74,17 @@ namespace iTunes.SMTC.AppleMusic
                 try
                 {
                     // Check if Apple Music is currently running
-                    // TODO: check SMTC
                     if (IsAppleMusicRunning())
                     {
-                        AMDispatcher.TryEnqueue(() =>
+                        var playerInfo = GetAMPlayerInfo();
+
+                        // Update SMTC display
+                        UpdateSMTCDisplay(playerInfo);
+
+                        if (UseMediaSession)
                         {
-                            // Update SMTC display
-                            if (UseMediaSession)
-                            {
-                                UpdateSMTCExtras(GetAMPlayerInfo());
-                            }
-                            else
-                            {
-                                UpdateSMTCDisplay(GetAMPlayerInfo());
-                            }
-                        });
+                            UpdateSMTCExtras(playerInfo);
+                        }
                     }
                     else
                     {
@@ -108,6 +92,11 @@ namespace iTunes.SMTC.AppleMusic
                         //_currentTrack?.Dispose();
                         _currentTrack = null;
                         _currentVolume = null;
+
+                        if (_systemMediaTransportControls?.DisplayUpdater?.Type != MediaPlaybackType.Unknown)
+                        {
+                            UpdateSMTCDisplay(null);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -118,6 +107,11 @@ namespace iTunes.SMTC.AppleMusic
 
             StartNPSMService();
             StartNAudioService();
+
+            if (!_statusTimer.Enabled)
+            {
+                _statusTimer.Start();
+            }
         }
 
         private static bool IsAppleMusicRunning()
@@ -317,7 +311,7 @@ namespace iTunes.SMTC.AppleMusic
             return null;
         }
 
-        private async Task SaveArtwork(Stream artworkStream)
+        private async Task<IStorageFile> SaveArtwork(Stream artworkStream)
         {
             if (_artworkUri == null)
             {
@@ -348,11 +342,12 @@ namespace iTunes.SMTC.AppleMusic
                 }
             }
 
+            var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
+
             try
             {
                 if (artworkStream != null && artworkStream.Length > 0)
                 {
-                    var file = await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath);
                     var fs = await file.OpenAsync(FileAccessMode.ReadWrite);
                     using var fsWrite = fs.AsStreamForWrite();
                     await artworkStream.CopyToAsync(fsWrite);
@@ -368,6 +363,8 @@ namespace iTunes.SMTC.AppleMusic
             {
                 SentrySdk.CaptureException(ex);
             }
+
+            return file;
         }
 
         private void ShowToastNotification(TrackMetadata track)
@@ -375,10 +372,17 @@ namespace iTunes.SMTC.AppleMusic
             if (track != null)
             {
                 ResetToastToken();
+                var token = toastCts.Token;
 
-                ArtworkDispatcher.TryEnqueue(async () =>
+                ArtworkDispatcher.TryEnqueue(DispatcherQueuePriority.Low, async () =>
                 {
-                    await Task.Delay(500);
+                    try
+                    {
+                        await Task.Delay(100, token);
+                    }
+                    catch { }
+
+                    if (token.IsCancellationRequested) return;
 
                     var notifTag = GetNotificationTag();
 
@@ -387,6 +391,8 @@ namespace iTunes.SMTC.AppleMusic
                         ToastNotificationManagerCompat.History.Remove(notifTag);
                     }
                     catch { }
+
+                    if (token.IsCancellationRequested) return;
 
                     new ToastContentBuilder()
                         .AddText(track.Name, AdaptiveTextStyle.Base, hintMaxLines: 1)
@@ -401,7 +407,7 @@ namespace iTunes.SMTC.AppleMusic
 
                             try
                             {
-                                await Task.Delay(5250, toastCts.Token);
+                                await Task.Delay(5250, token);
 
                                 ToastNotificationManagerCompat.History.Remove(t.Tag);
                             }
@@ -409,6 +415,31 @@ namespace iTunes.SMTC.AppleMusic
                         });
                 });
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (managed objects)
+                ArtworkDispatcherCtrl.ShutdownQueueAsync();
+
+                Destroy();
+                _statusTimer?.Stop();
+                _statusTimer?.Dispose();
+
+                _currentTrack = null;
+                _currentVolume = null;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        ~AppleMusicController()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
         }
     }
 }

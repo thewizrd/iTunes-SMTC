@@ -27,43 +27,11 @@ namespace iTunes.SMTC.AppleMusic
             Repeat
         }
 
-        private Window? FindAppleMusicWindow()
-        {
-            try
-            {
-                var processes = Process.GetProcessesByName("AppleMusic");
-
-                // Check if app window is available and responding
-                var process = processes.FirstOrDefault(p => p.MainWindowHandle != IntPtr.Zero && p.Responding);
-
-                if (process != null)
-                {
-                    var app = FlaUI.Core.Application.Attach(process);
-
-                    if (Wait.UntilResponsive(app.MainWindowHandle, TimeSpan.FromSeconds(5)))
-                    {
-                        using var automation = new UIA3Automation();
-                        var window = app.GetMainWindow(automation, waitTimeout: TimeSpan.FromSeconds(5));
-
-                        if ((window?.Name == "Apple Music" && window.ClassName == "WinUIDesktopWin32WindowClass") ||
-                            window?.Name == "MiniPlayer" || window?.Name == "Mini Player")
-                        {
-                            return window;
-                        }
-                    }
-                }
-            }
-            catch (TimeoutException)
-            {
-                return null;
-            }
-            return null;
-        }
-
         private AMPlayerInfo GetAMPlayerInfo()
         {
             // Poll for Apple Music window
-            var window = FindAppleMusicWindow();
+            using var app = AMWindow.GetWindow();
+            var window = app.Window;
             var info = new AMPlayerInfo();
 
             if (window != null)
@@ -267,249 +235,222 @@ namespace iTunes.SMTC.AppleMusic
 
         private void UpdateSMTCDisplay(AMPlayerInfo info)
         {
-            AMDispatcher.TryEnqueue(async () =>
+            if (info != null)
             {
-                if (info != null)
+                var playerStateChanged = (_systemMediaTransportControls.ShuffleEnabled != info.ShuffleEnabled) ||
+                    (_systemMediaTransportControls.AutoRepeatMode != info.RepeatMode) ||
+                    (_systemMediaTransportControls.IsPreviousEnabled != info.SkipBackEnabled) ||
+                    (_systemMediaTransportControls.IsNextEnabled != info.SkipForwardEnabled);
+
+                _systemMediaTransportControls.PlaybackStatus = info.IsPlaying ? MediaPlaybackStatus.Playing : (!string.IsNullOrEmpty(info.TrackData?.Name) ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Closed);
+                _systemMediaTransportControls.IsEnabled = !string.IsNullOrEmpty(info?.TrackData?.Name);
+
+                _systemMediaTransportControls.ShuffleEnabled = info.ShuffleEnabled;
+                _systemMediaTransportControls.AutoRepeatMode = info.RepeatMode;
+
+                _systemMediaTransportControls.IsPreviousEnabled = info.SkipBackEnabled;
+                _systemMediaTransportControls.IsNextEnabled = info.SkipForwardEnabled;
+
+                _systemMediaTransportControls.IsPauseEnabled = true;
+                _systemMediaTransportControls.IsPlayEnabled = true;
+                _systemMediaTransportControls.IsStopEnabled = true;
+
+                var prevTrack = _currentTrack;
+                var trackChanged = _currentTrack == null || !Equals(info.TrackData, _currentTrack);
+                var volumeChanged = !Equals(info.VolumeState, _currentVolume);
+
+                if (trackChanged)
                 {
-                    var playerStateChanged = (_systemMediaTransportControls.ShuffleEnabled != info.ShuffleEnabled) ||
-                        (_systemMediaTransportControls.AutoRepeatMode != info.RepeatMode) ||
-                        (_systemMediaTransportControls.IsPreviousEnabled != info.SkipBackEnabled) ||
-                        (_systemMediaTransportControls.IsNextEnabled != info.SkipForwardEnabled);
+                    _currentTrack = info.TrackData;
 
-                    _systemMediaTransportControls.PlaybackStatus = info.IsPlaying ? MediaPlaybackStatus.Playing : (!string.IsNullOrEmpty(info.TrackData?.Name) ? MediaPlaybackStatus.Paused : MediaPlaybackStatus.Closed);
-                    _systemMediaTransportControls.IsEnabled = !string.IsNullOrEmpty(info?.TrackData?.Name);
+                    SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
+                    updater.ClearAll();
 
-                    _systemMediaTransportControls.ShuffleEnabled = info.ShuffleEnabled;
-                    _systemMediaTransportControls.AutoRepeatMode = info.RepeatMode;
-
-                    _systemMediaTransportControls.IsPreviousEnabled = info.SkipBackEnabled;
-                    _systemMediaTransportControls.IsNextEnabled = info.SkipForwardEnabled;
-
-                    _systemMediaTransportControls.IsPauseEnabled = true;
-                    _systemMediaTransportControls.IsPlayEnabled = true;
-                    _systemMediaTransportControls.IsStopEnabled = true;
-
-                    var prevTrack = _currentTrack;
-                    var trackChanged = _currentTrack == null || !Equals(info.TrackData, _currentTrack);
-                    var volumeChanged = !Equals(info.VolumeState, _currentVolume);
-
-                    if (trackChanged)
+                    if (!string.IsNullOrEmpty(info?.TrackData?.Name))
                     {
-                        _currentTrack = info.TrackData;
+                        updater.Type = MediaPlaybackType.Music;
+                        updater.MusicProperties.Title = info.TrackData.Name;
+                        updater.MusicProperties.Artist = info.TrackData.Artist;
+                        updater.MusicProperties.AlbumTitle = info.TrackData.Album;
+                        _metadataEmpty = false;
 
-                        SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
-                        updater.ClearAll();
-
-                        if (!string.IsNullOrEmpty(info?.TrackData?.Name))
+                        // Update artwork
+                        if (info.TrackData.Artwork is byte[] buf)
                         {
-                            updater.Type = MediaPlaybackType.Music;
-                            updater.MusicProperties.Title = info.TrackData.Name;
-                            updater.MusicProperties.Artist = info.TrackData.Artist;
-                            updater.MusicProperties.AlbumTitle = info.TrackData.Album;
-                            _metadataEmpty = false;
+                            ResetArtworkToken();
+                            var token = artworkCts.Token;
 
-                            // Update artwork
-                            if (info.TrackData.Artwork is byte[] buf)
+                            try
                             {
-                                ResetArtworkToken();
-                                var token = artworkCts.Token;
-
-                                try
-                                {
-                                    ArtworkDispatcher.TryEnqueue(async () =>
-                                    {
-                                        await Task.Delay(500);
-
-                                        if (token.IsCancellationRequested) return;
-
-                                        using var memoryStream = new MemoryStream(buf, false);
-                                        await SaveArtwork(memoryStream);
-                                        updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
-                                        updater.Update();
-
-                                        if (token.IsCancellationRequested) return;
-
-                                        if (ArtworkChanged?.HasListeners() == true)
-                                        {
-                                            ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
-                                        }
-                                    });
-                                }
-                                catch
-                                {
-                                    ArtworkDispatcher.TryEnqueue(async () =>
-                                    {
-                                        await Task.Delay(500);
-
-                                        if (token.IsCancellationRequested) return;
-
-                                        await SaveArtwork(null);
-                                    });
-                                }
-                            }
-                            else if (!UseMediaSession && MediaPlaybackSource != null)
-                            {
-                                ResetArtworkToken();
-                                var token = artworkCts.Token;
-
-                                try
-                                {
-                                    info.TrackData.Artwork = _npsmInfo?.TrackData?.Artwork;
-                                    ArtworkDispatcher.TryEnqueue(async () =>
-                                    {
-                                        await Task.Delay(500);
-
-                                        if (token.IsCancellationRequested) return;
-
-                                        await SaveArtwork(MediaPlaybackSource.GetThumbnailStream());
-                                        updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
-                                        updater.Update();
-
-                                        if (token.IsCancellationRequested) return;
-
-                                        if (ArtworkChanged?.HasListeners() == true)
-                                        {
-                                            ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
-                                        }
-                                    });
-                                }
-                                catch
-                                {
-                                    ArtworkDispatcher.TryEnqueue(async () =>
-                                    {
-                                        await Task.Delay(500);
-
-                                        if (token.IsCancellationRequested) return;
-
-                                        await SaveArtwork(null);
-                                    });
-                                }
-                            }
-                            else
-                            {
-                                ResetArtworkToken();
-                                var token = artworkCts.Token;
-
                                 ArtworkDispatcher.TryEnqueue(async () =>
                                 {
-                                    await Task.Delay(500);
+                                    if (token.IsCancellationRequested) return;
 
+                                    using var memoryStream = new MemoryStream(buf, false);
+                                    var file = await SaveArtwork(memoryStream);
+                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(file);
+                                    updater.Update();
+
+                                    if (token.IsCancellationRequested) return;
+
+                                    if (ArtworkChanged?.HasListeners() == true)
+                                    {
+                                        ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = await updater.Thumbnail.ToBytes() });
+                                    }
+                                });
+                            }
+                            catch
+                            {
+                                ArtworkDispatcher.TryEnqueue(async () =>
+                                {
                                     if (token.IsCancellationRequested) return;
 
                                     await SaveArtwork(null);
                                 });
                             }
+                        }
+                        else if (UseMediaSession && MediaPlaybackSource != null)
+                        {
+                            ResetArtworkToken();
+                            var token = artworkCts.Token;
+
+                            ArtworkDispatcher.TryEnqueue(async () =>
+                            {
+                                if (token.IsCancellationRequested) return;
+
+                                var file = await SaveArtwork(MediaPlaybackSource.GetThumbnailStream());
+                                updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(file);
+                                updater.Update();
+
+                                if (info.TrackData != null)
+                                {
+                                    info.TrackData.Artwork = await updater.Thumbnail.ToBytes();
+                                }
+
+                                if (token.IsCancellationRequested) return;
+
+                                if (ArtworkChanged?.HasListeners() == true)
+                                {
+                                    ArtworkChanged?.Invoke(this, new ArtworkModel { Artwork = info?.TrackData?.Artwork ?? await updater.Thumbnail.ToBytes() });
+                                }
+                            });
                         }
                         else
                         {
-                            if (!_metadataEmpty)
+                            ResetArtworkToken();
+                            var token = artworkCts.Token;
+
+                            ArtworkDispatcher.TryEnqueue(async () =>
                             {
-                                updater.Type = MediaPlaybackType.Music;
-                                updater.MusicProperties.Artist = "Media Controller";
+                                if (token.IsCancellationRequested) return;
 
-                                // Remove artwork
-                                ResetArtworkToken();
-                                var token = artworkCts.Token;
-
-                                ArtworkDispatcher.TryEnqueue(async () =>
-                                {
-                                    await Task.Delay(500);
-
-                                    if (token.IsCancellationRequested) return;
-
-                                    await SaveArtwork(null);
-                                });
-
-                                try
-                                {
-                                    updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(await StorageFile.GetFileFromPathAsync(_artworkUri.LocalPath));
-                                }
-                                catch { }
-                            }
-
-                            _metadataEmpty = true;
+                                await SaveArtwork(null);
+                            });
                         }
-
-                        updater.Update();
                     }
-
-                    if (info.TrackData != null)
+                    else
                     {
-                        _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties()
+                        if (!_metadataEmpty)
                         {
-                            StartTime = TimeSpan.Zero,
-                            EndTime = TimeSpan.FromSeconds(info.TrackData.Duration),
-                            Position = TimeSpan.FromSeconds(info.TrackProgress)
-                        });
+                            updater.Type = MediaPlaybackType.Music;
+                            updater.MusicProperties.Artist = "Media Controller";
+
+                            // Remove artwork
+                            ResetArtworkToken();
+                            var token = artworkCts.Token;
+
+                            ArtworkDispatcher.TryEnqueue(async () =>
+                            {
+                                if (token.IsCancellationRequested) return;
+
+                                var file = await SaveArtwork(null);
+
+                                updater.Thumbnail = RandomAccessStreamReference.CreateFromFile(file);
+                            });
+                        }
+
+                        _metadataEmpty = true;
                     }
 
-                    if ((trackChanged || _isPlaying != info.IsPlaying))
+                    updater.Update();
+                }
+
+                if (info.TrackData != null)
+                {
+                    _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties()
                     {
-                        if (Settings.ShowTrackToast)
-                        {
-                            ShowToastNotification(info.TrackData);
-                        }
+                        StartTime = TimeSpan.Zero,
+                        EndTime = TimeSpan.FromSeconds(info.TrackData.Duration),
+                        Position = TimeSpan.FromSeconds(info.TrackProgress)
+                    });
+                }
 
-                        if (trackChanged && (prevTrack != null || _currentTrack != null))
+                if ((trackChanged || _isPlaying != info.IsPlaying))
+                {
+                    if (Settings.ShowTrackToast)
+                    {
+                        ShowToastNotification(info.TrackData);
+                    }
+
+                    if (trackChanged && (prevTrack != null || _currentTrack != null))
+                    {
+                        if (TrackChanged?.HasListeners() == true)
                         {
-                            if (TrackChanged?.HasListeners() == true)
-                            {
-                                TrackChanged?.Invoke(this, info.ToPlayerStateModel(true));
-                            }
-                        }
-                        else if (_isPlaying != info.IsPlaying)
-                        {
-                            if (PlayerStateChanged?.HasListeners() == true)
-                            {
-                                PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
-                            }
+                            TrackChanged?.Invoke(this, info.ToPlayerStateModel(true));
                         }
                     }
-                    else if (playerStateChanged)
+                    else if (_isPlaying != info.IsPlaying)
                     {
                         if (PlayerStateChanged?.HasListeners() == true)
                         {
                             PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
                         }
                     }
-                    else if (volumeChanged)
-                    {
-                        if (VolumeStateChanged?.HasListeners() == true)
-                        {
-                            VolumeStateChanged?.Invoke(this, info.VolumeState);
-                        }
-                    }
-
-                    _isPlaying = info.IsPlaying;
                 }
-                else
+                else if (playerStateChanged)
                 {
-                    _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Closed;
-                    _systemMediaTransportControls.IsEnabled = false;
-                    _systemMediaTransportControls.ShuffleEnabled = false;
-                    _systemMediaTransportControls.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
-
-                    _systemMediaTransportControls.IsPauseEnabled = true;
-                    _systemMediaTransportControls.IsPlayEnabled = true;
-                    _systemMediaTransportControls.IsStopEnabled = false;
-
-                    SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
-                    updater.ClearAll();
-
-                    _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties());
-
-                    if (_isPlaying || !_metadataEmpty)
+                    if (PlayerStateChanged?.HasListeners() == true)
                     {
-                        if (TrackChanged?.HasListeners() == true)
-                        {
-                            TrackChanged?.Invoke(this, new PlayerStateModel());
-                        }
+                        PlayerStateChanged?.Invoke(this, info.ToPlayerStateModel(false));
                     }
-
-                    _isPlaying = false;
-                    _metadataEmpty = true;
                 }
-            });
+                else if (volumeChanged)
+                {
+                    if (VolumeStateChanged?.HasListeners() == true)
+                    {
+                        VolumeStateChanged?.Invoke(this, info.VolumeState);
+                    }
+                }
+
+                _isPlaying = info.IsPlaying;
+            }
+            else
+            {
+                _systemMediaTransportControls.PlaybackStatus = MediaPlaybackStatus.Closed;
+                _systemMediaTransportControls.IsEnabled = false;
+                _systemMediaTransportControls.ShuffleEnabled = false;
+                _systemMediaTransportControls.AutoRepeatMode = MediaPlaybackAutoRepeatMode.None;
+
+                _systemMediaTransportControls.IsPauseEnabled = true;
+                _systemMediaTransportControls.IsPlayEnabled = true;
+                _systemMediaTransportControls.IsStopEnabled = false;
+
+                SystemMediaTransportControlsDisplayUpdater updater = _systemMediaTransportControls.DisplayUpdater;
+                updater.ClearAll();
+
+                _systemMediaTransportControls.UpdateTimelineProperties(new SystemMediaTransportControlsTimelineProperties());
+
+                if (_isPlaying || !_metadataEmpty)
+                {
+                    if (TrackChanged?.HasListeners() == true)
+                    {
+                        TrackChanged?.Invoke(this, new PlayerStateModel());
+                    }
+                }
+
+                _isPlaying = false;
+                _metadataEmpty = true;
+            }
         }
 
         private void UpdateSMTCExtras(AMPlayerInfo info)
@@ -566,7 +507,8 @@ namespace iTunes.SMTC.AppleMusic
         private void SendAMPlayerCommand(AppleMusicControlButtons button)
         {
             // Poll for Apple Music window
-            var window = FindAppleMusicWindow();
+            using var app = AMWindow.GetWindow();
+            var window = app.Window;
 
             if (window != null)
             {
@@ -582,10 +524,7 @@ namespace iTunes.SMTC.AppleMusic
                         shuffleBtn?.Toggle();
 
                         // Update button state
-                        AMDispatcher.TryEnqueue(() =>
-                        {
-                            _systemMediaTransportControls.ShuffleEnabled = shuffleBtn != null && shuffleBtn.IsAvailable && shuffleBtn.IsEnabled && shuffleBtn.ToggleState == FlaUI.Core.Definitions.ToggleState.On;
-                        });
+                        _systemMediaTransportControls.ShuffleEnabled = shuffleBtn != null && shuffleBtn.IsAvailable && shuffleBtn.IsEnabled && shuffleBtn.ToggleState == FlaUI.Core.Definitions.ToggleState.On;
                         break;
                     case AppleMusicControlButtons.SkipBack:
                         window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"))
@@ -612,16 +551,13 @@ namespace iTunes.SMTC.AppleMusic
                         repeatBtn?.Toggle();
 
                         // Update button state
-                        AMDispatcher.TryEnqueue(() =>
+                        _systemMediaTransportControls.AutoRepeatMode = repeatBtn.ToggleState switch
                         {
-                            _systemMediaTransportControls.AutoRepeatMode = repeatBtn.ToggleState switch
-                            {
-                                FlaUI.Core.Definitions.ToggleState.Off => MediaPlaybackAutoRepeatMode.None,
-                                FlaUI.Core.Definitions.ToggleState.Indeterminate => MediaPlaybackAutoRepeatMode.Track,
-                                FlaUI.Core.Definitions.ToggleState.On => MediaPlaybackAutoRepeatMode.List,
-                                _ => MediaPlaybackAutoRepeatMode.None,
-                            };
-                        });
+                            FlaUI.Core.Definitions.ToggleState.Off => MediaPlaybackAutoRepeatMode.None,
+                            FlaUI.Core.Definitions.ToggleState.Indeterminate => MediaPlaybackAutoRepeatMode.Track,
+                            FlaUI.Core.Definitions.ToggleState.On => MediaPlaybackAutoRepeatMode.List,
+                            _ => MediaPlaybackAutoRepeatMode.None,
+                        };
                         break;
                 }
             }
@@ -635,7 +571,8 @@ namespace iTunes.SMTC.AppleMusic
         internal void UpdateAMPlayerPlaybackPosition(double timeInSeconds)
         {
             // Poll for Apple Music window
-            var window = FindAppleMusicWindow();
+            using var app = AMWindow.GetWindow();
+            var window = app.Window;
 
             if (window != null)
             {
