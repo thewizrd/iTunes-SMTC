@@ -131,8 +131,6 @@
             // iTunesSwitch
             // 
             iTunesSwitch.AutoSize = true;
-            iTunesSwitch.Checked = true;
-            iTunesSwitch.CheckState = CheckState.Checked;
             iTunesSwitch.Location = new Point(19, 149);
             iTunesSwitch.Margin = new Padding(10, 5, 10, 5);
             iTunesSwitch.Name = "iTunesSwitch";
@@ -145,13 +143,15 @@
             // AppleMusicSwitch
             // 
             AppleMusicSwitch.AutoSize = true;
+            AppleMusicSwitch.Checked = true;
+            AppleMusicSwitch.CheckState = CheckState.Checked;
             AppleMusicSwitch.Location = new Point(19, 178);
             AppleMusicSwitch.Margin = new Padding(10, 5, 10, 5);
             AppleMusicSwitch.Name = "AppleMusicSwitch";
-            AppleMusicSwitch.Size = new Size(144, 19);
+            AppleMusicSwitch.Size = new Size(92, 19);
             AppleMusicSwitch.TabIndex = 7;
             AppleMusicSwitch.Tag = "AMPreview";
-            AppleMusicSwitch.Text = "Apple Music (Preview)";
+            AppleMusicSwitch.Text = "Apple Music";
             AppleMusicSwitch.UseVisualStyleBackColor = true;
             // 
             // SettingsUi
