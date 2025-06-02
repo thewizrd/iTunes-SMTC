@@ -422,7 +422,7 @@ namespace iTunes.SMTC.AppleMusic
             if (disposing)
             {
                 // Dispose managed state (managed objects)
-                ArtworkDispatcherCtrl.ShutdownQueueAsync();
+                _ = ArtworkDispatcherCtrl.ShutdownQueueAsync();
 
                 Destroy();
                 _statusTimer?.Stop();

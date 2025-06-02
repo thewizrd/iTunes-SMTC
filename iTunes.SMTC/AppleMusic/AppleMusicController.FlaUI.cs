@@ -43,7 +43,7 @@ namespace iTunes.SMTC.AppleMusic
 
 #if DEBUG || UNPACKAGEDDEBUG
                     //var volumeBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
-                    //volumeBtn?.Click();
+                    //volumeBtn?.Invoke();
                     //Wait.UntilInputIsProcessed(TimeSpan.FromSeconds(5));
                     //LookForChildrenAndDescendants(window);
 #endif
@@ -168,7 +168,7 @@ namespace iTunes.SMTC.AppleMusic
                         if (volumeSlider == null)
                         {
                             // Click button to bring up volume flyout
-                            volumeBtn.Click();
+                            volumeBtn.Invoke();
                             Wait.UntilInputIsProcessed();
                             popupHost ??= window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.PopupWindowSiteBridge"));
                             volumeFlyout = popupHost?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeFlyout"));

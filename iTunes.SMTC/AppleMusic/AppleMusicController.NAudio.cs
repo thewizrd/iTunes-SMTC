@@ -1,4 +1,5 @@
-﻿using iTunes.SMTC.Utils;
+﻿using iTunes.SMTC.AppleMusic.Model;
+using iTunes.SMTC.Utils;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 using System.Diagnostics;
@@ -29,6 +30,7 @@ namespace iTunes.SMTC.AppleMusic
                     MMDeviceEnumerator ??= new MMDeviceEnumerator();
                     MMDeviceEnumerator.RegisterEndpointNotificationCallback(this);
                     ReloadSession(MMDeviceEnumerator);
+                    PlayerStateChanged += NAudio_PlayerStateChanged;
                 }
                 catch (Exception ex)
                 {
@@ -66,7 +68,7 @@ namespace iTunes.SMTC.AppleMusic
                         {
                             var session = sessions[i];
 
-                            if (session.GetProcessID == amplProcess.Id)
+                            if (session.GetProcessID == amplProcess.Id && session.State == AudioSessionState.AudioSessionStateActive)
                             {
                                 MMAudioSession = session;
                                 break;
@@ -83,7 +85,7 @@ namespace iTunes.SMTC.AppleMusic
         {
             var amplProcess = Process.GetProcessesByName(AUDIO_SESSION_PROCESS)?.FirstOrDefault();
 
-            if (amplProcess != null && newSession is AudioSessionControl ctrl && ctrl.GetProcessID == amplProcess.Id)
+            if (amplProcess != null && newSession is AudioSessionControl ctrl && ctrl.GetProcessID == amplProcess.Id && ctrl.State == AudioSessionState.AudioSessionStateActive)
             {
                 UnloadAudioSession();
 
@@ -110,6 +112,8 @@ namespace iTunes.SMTC.AppleMusic
 
         private void StopNAudioService()
         {
+            PlayerStateChanged -= NAudio_PlayerStateChanged;
+
             if (MMDeviceEnumerator != null)
             {
                 try
@@ -213,11 +217,28 @@ namespace iTunes.SMTC.AppleMusic
 
         public void OnGroupingParamChanged(ref Guid groupingId) { }
 
-        public void OnStateChanged(AudioSessionState state) { }
+        public void OnStateChanged(AudioSessionState state) 
+        {
+            // Find the active session
+            if (state != AudioSessionState.AudioSessionStateActive && MMDeviceEnumerator != null)
+            {
+                ReloadSession(MMDeviceEnumerator);
+            }
+        }
 
         public void OnSessionDisconnected(AudioSessionDisconnectReason disconnectReason)
         {
             UnloadAudioSession();
+        }
+
+        private void NAudio_PlayerStateChanged(object sender, PlayerStateModel e)
+        {
+            // Reload active session if current is inactive and player is playing
+            if (e.IsPlaying && MMDeviceEnumerator != null &&
+                MMAudioSession != null && MMAudioSession.State != AudioSessionState.AudioSessionStateActive)
+            {
+                ReloadSession(MMDeviceEnumerator);
+            }
         }
     }
 }
