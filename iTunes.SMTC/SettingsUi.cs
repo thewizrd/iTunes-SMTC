@@ -63,8 +63,13 @@ namespace iTunes.SMTC
                 // TODO: dispose managed state (managed objects)
                 foreach (var entry in ControllerRegistry)
                 {
-                    entry.Value.Destroy();
-                    entry.Value.Dispose();
+                    var controller = entry.Value;
+
+                    controller.ControllerInitialized -= Controller_OnControllerInitialized;
+                    controller.ControllerDestroyed -= Controller_OnControllerDestroyed;
+
+                    controller.Destroy();
+                    controller.Dispose();
                 }
                 ControllerRegistry.Clear();
 

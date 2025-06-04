@@ -30,6 +30,8 @@
             PlayerPluginsLabel = new Label();
             iTunesSwitch = new CheckBox();
             AppleMusicSwitch = new CheckBox();
+            AMRemoteSeparator = new ToolStripSeparator();
+            AMRemoteMenuItem = new ToolStripMenuItem();
             TaskbarIconCtxMenu.SuspendLayout();
             SuspendLayout();
             // 
@@ -76,9 +78,9 @@
             // 
             // TaskbarIconCtxMenu
             // 
-            TaskbarIconCtxMenu.Items.AddRange(new ToolStripItem[] { TitleMenuItem, TitleSeparator, OpenMenuItem, QuitMenuItem });
+            TaskbarIconCtxMenu.Items.AddRange(new ToolStripItem[] { TitleMenuItem, TitleSeparator, AMRemoteMenuItem, AMRemoteSeparator, OpenMenuItem, QuitMenuItem });
             TaskbarIconCtxMenu.Name = "TaskbarIconCtxMenu";
-            TaskbarIconCtxMenu.Size = new Size(202, 76);
+            TaskbarIconCtxMenu.Size = new Size(202, 126);
             // 
             // TitleMenuItem
             // 
@@ -154,6 +156,22 @@
             AppleMusicSwitch.Text = "Apple Music";
             AppleMusicSwitch.UseVisualStyleBackColor = true;
             // 
+            // AMRemoteSeparator
+            // 
+            AMRemoteSeparator.Name = "AMRemoteSeparator";
+            AMRemoteSeparator.Size = new Size(198, 6);
+            AMRemoteSeparator.Tag = "AMPreview";
+            AMRemoteSeparator.Visible = false;
+            // 
+            // AMRemoteMenuItem
+            // 
+            AMRemoteMenuItem.Enabled = false;
+            AMRemoteMenuItem.Name = "AMRemoteMenuItem";
+            AMRemoteMenuItem.Size = new Size(201, 22);
+            AMRemoteMenuItem.Tag = "AMPreview";
+            AMRemoteMenuItem.Text = "Remote";
+            AMRemoteMenuItem.Visible = false;
+            // 
             // SettingsUi
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -193,5 +211,7 @@
         private CheckBox AppleMusicSwitch;
         private ToolStripMenuItem TitleMenuItem;
         private ToolStripSeparator TitleSeparator;
+        private ToolStripMenuItem AMRemoteMenuItem;
+        private ToolStripSeparator AMRemoteSeparator;
     }
 }

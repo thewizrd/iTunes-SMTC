@@ -27,6 +27,8 @@ namespace iTunes.SMTC.AppleMusic
         private IDisposable serverHandle = null;
         private ServiceDiscovery mDnsDiscovery;
 
+        public Uri ServiceUri { get; private set; }
+
         public void Start(Action<IServiceCollection> configureServices = null)
         {
             if (serverHandle == null)
@@ -114,6 +116,9 @@ namespace iTunes.SMTC.AppleMusic
                 service.AddProperty("hostname", ipAddr.ToString());
                 service.AddProperty("port", port.ToString());
                 service.AddProperty("uri", "/api/am-remote");
+
+                ServiceUri = new UriBuilder(Uri.UriSchemeHttp, ipAddr.ToString(), port).Uri;
+
                 mDnsDiscovery.Advertise(service);
             }
             else
@@ -125,6 +130,7 @@ namespace iTunes.SMTC.AppleMusic
         public void Stop()
         {
             mDnsDiscovery?.Unadvertise();
+            ServiceUri = null;
             serverHandle?.Dispose();
             serverHandle = null;
         }

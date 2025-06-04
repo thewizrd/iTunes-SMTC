@@ -23,8 +23,19 @@ namespace iTunes.SMTC
         public abstract bool IsEnabled { get; }
 
         public bool IsInitialized { get; private set; }
-        public virtual void Initialize() { IsInitialized = true; }
-        public virtual void Destroy() { IsInitialized = false; }
+        public virtual void Initialize()
+        { 
+            IsInitialized = true;
+            OnControllerInitialized(new ControllerInitializedEventArgs() { Key = Key });
+        }
+        public virtual void Destroy()
+        { 
+            IsInitialized = false;
+            OnControllerDestroyed(new ControllerDestroyedEventArgs() { Key = Key });
+        }
+
+        public event EventHandler<ControllerInitializedEventArgs> ControllerInitialized;
+        public event EventHandler<ControllerDestroyedEventArgs> ControllerDestroyed;
 
         public void EnableControllerIfAllowed()
         {
@@ -52,6 +63,16 @@ namespace iTunes.SMTC
         public virtual void OnSystemControlsShuffleEnabledChangeRequested(SystemMediaTransportControls sender, ShuffleEnabledChangeRequestedEventArgs args) { }
         public virtual void OnSystemControlsAutoRepeatModeChangeRequested(SystemMediaTransportControls sender, AutoRepeatModeChangeRequestedEventArgs args) { }
         public virtual void OnSystemControlsPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args) { }
+
+        protected virtual void OnControllerInitialized(ControllerInitializedEventArgs e)
+        {
+            ControllerInitialized?.Invoke(this, e);
+        }
+
+        protected virtual void OnControllerDestroyed(ControllerDestroyedEventArgs e)
+        {
+            ControllerDestroyed?.Invoke(this, e);
+        }
 
         protected MediaPlayer GetMediaPlayer() => _mediaPlayer;
 

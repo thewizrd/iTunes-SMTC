@@ -39,9 +39,9 @@ namespace iTunes.SMTC.AppleMusic
 
         public override void Initialize()
         {
-            base.Initialize();
             InitializeAMController();
             StartRemoteServer();
+            base.Initialize();
         }
 
         public override void Destroy()
@@ -60,6 +60,15 @@ namespace iTunes.SMTC.AppleMusic
             }
 
             base.Destroy();
+        }
+
+        protected override void OnControllerInitialized(ControllerInitializedEventArgs e)
+        {
+            base.OnControllerInitialized(new AMControllerInitializedEventArgs()
+            {
+                Key = e.Key,
+                ServiceUri = AMRemoteServer.Instance?.ServiceUri,
+            });
         }
 
         private void InitializeAMController()
