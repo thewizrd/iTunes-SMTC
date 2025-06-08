@@ -87,12 +87,23 @@ namespace iTunes.SMTC.AppleMusic
                     {
                         var playerInfo = GetAMPlayerInfo();
 
-                        // Update SMTC display
-                        UpdateSMTCDisplay(playerInfo);
-
-                        if (UseMediaSession)
+                        if (playerInfo != null)
                         {
-                            UpdateSMTCExtras(playerInfo);
+                            // Update SMTC display
+                            UpdateSMTCDisplay(playerInfo);
+
+                            if (UseMediaSession)
+                            {
+                                UpdateSMTCExtras(playerInfo);
+                            }
+                        }
+                        else if (UseMediaSession)
+                        {
+                            UpdateSMTCExtras(null);
+                        }
+                        else
+                        {
+                            UpdateSMTCDisplay(null);
                         }
                     }
                     else
@@ -192,7 +203,7 @@ namespace iTunes.SMTC.AppleMusic
 
                         if (PlayerStateChanged?.HasListeners() == true)
                         {
-                            PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel());
+                            PlayerStateChanged?.Invoke(this, GetAMPlayerInfo()?.ToPlayerStateModel() ?? _npsmInfo?.ToPlayerStateModel());
                         }
                     }
                     break;
@@ -232,7 +243,7 @@ namespace iTunes.SMTC.AppleMusic
 
                     if (PlayerStateChanged?.HasListeners() == true)
                     {
-                        PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel());
+                        PlayerStateChanged?.Invoke(this, GetAMPlayerInfo()?.ToPlayerStateModel() ?? _npsmInfo?.ToPlayerStateModel());
                     }
                     break;
             }
@@ -240,15 +251,21 @@ namespace iTunes.SMTC.AppleMusic
 
         internal async Task<PlayerStateModel> GetPlayerState(bool includeArtwork = false)
         {
-            var playerInfo = GetAMPlayerInfo();
-
-            if (playerInfo.TrackData != null)
+            if (GetAMPlayerInfo() is AMPlayerInfo playerInfo && playerInfo?.TrackData != null)
             {
                 if (includeArtwork)
                 {
                     playerInfo.TrackData.Artwork = await GetArtwork();
                 }
                 return playerInfo.ToPlayerStateModel(includeArtwork);
+            }
+            else if (_npsmInfo?.TrackData != null)
+            {
+                if (includeArtwork && _npsmInfo.TrackData.Artwork == null)
+                {
+                    _npsmInfo.TrackData.Artwork = await GetArtwork();
+                }
+                return _npsmInfo.ToPlayerStateModel(includeArtwork);
             }
             else
             {

@@ -324,11 +324,11 @@ namespace iTunes.SMTC.AppleMusic
                         {
                             if (!UseMediaSession)
                             {
-                                PlayerStateChanged?.Invoke(this, GetAMPlayerInfo().ToPlayerStateModel(true));
+                                PlayerStateChanged?.Invoke(this, GetAMPlayerInfo()?.ToPlayerStateModel(true));
                             }
                             else
                             {
-                                PlayerStateChanged?.Invoke(this, _npsmInfo.ToPlayerStateModel(true));
+                                PlayerStateChanged?.Invoke(this, _npsmInfo?.ToPlayerStateModel(true));
                             }
                         }
                     }

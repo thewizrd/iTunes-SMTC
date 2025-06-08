@@ -41,21 +41,27 @@ namespace iTunes.SMTC.AppleMusic
                     // Main Window Content
                     var content = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.DesktopChildSiteBridge"));
 
+                    if (content == null)
+                    {
+                        // Window is available but may be offscreen or on another virtual desktop
+                        return null;
+                    }
+
 #if DEBUG || UNPACKAGEDDEBUG
-                    //var volumeBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
+                    //var volumeBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
                     //volumeBtn?.Invoke();
                     //Wait.UntilInputIsProcessed(TimeSpan.FromSeconds(5));
                     //LookForChildrenAndDescendants(window);
 #endif
 
-                    var shuffleBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("ShuffleButton"))?.AsToggleButton();
-                    var skipBackBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipBack"))?.AsButton();
-                    var playPauseStopBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_PlayPauseStop"))?.AsButton();
-                    var skipFwdBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipForward"))?.AsButton();
-                    var repeatBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("RepeatButton"))?.AsToggleButton();
+                    var shuffleBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("ShuffleButton"))?.AsToggleButton();
+                    var skipBackBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipBack"))?.AsButton();
+                    var playPauseStopBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_PlayPauseStop"))?.AsButton();
+                    var skipFwdBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("TransportControl_SkipForward"))?.AsButton();
+                    var repeatBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("RepeatButton"))?.AsToggleButton();
 
-                    //var thumbnailHoverGrid = content.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
-                    var mediaTextDetails = content.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText").And(cf.ByClassName("TextBlock")));
+                    //var thumbnailHoverGrid = content?.FindFirstDescendant(cf => cf.ByAutomationId("ThumbnailHoverGrid"));
+                    var mediaTextDetails = content?.FindAllDescendants(cf => cf.ByAutomationId("ScrollingText").And(cf.ByClassName("TextBlock")));
                     var mediaDetailCount = mediaTextDetails?.Length ?? 0;
 
                     if (mediaDetailCount == 2)
@@ -117,7 +123,7 @@ namespace iTunes.SMTC.AppleMusic
                     }
 
                     // Track Duration info
-                    var progressSlider = content.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber").Or(new BoolCondition(IsMiniPlayer(window)).And(cf.ByAutomationId("Scrubber"))))?.AsSlider();
+                    var progressSlider = content?.FindFirstDescendant(cf => cf.ByAutomationId("LCDScrubber").Or(new BoolCondition(IsMiniPlayer(window)).And(cf.ByAutomationId("Scrubber"))))?.AsSlider();
                     if (progressSlider != null)
                     {
                         // Focus on slider to get time and duration
@@ -130,8 +136,8 @@ namespace iTunes.SMTC.AppleMusic
                         info.TrackProgress = (int)progressSlider.Value;
 
                         /*
-                        var currentTime = content.FindFirstDescendant(cf => cf.ByAutomationId("CurrentTime"));
-                        var duration = content.FindFirstDescendant(cf => cf.ByAutomationId("Duration"));
+                        var currentTime = content?.FindFirstDescendant(cf => cf.ByAutomationId("CurrentTime"));
+                        var duration = content?.FindFirstDescendant(cf => cf.ByAutomationId("Duration"));
 
                         if (!string.IsNullOrWhiteSpace(currentTime?.Name) && !string.IsNullOrWhiteSpace(duration?.Name))
                         {
@@ -151,14 +157,14 @@ namespace iTunes.SMTC.AppleMusic
                         info.SeekEnabled = false;
                     }
 
-                    if (content.FindFirstDescendant(cf => cf.ByName("LIVE")) is not null)
+                    if (content?.FindFirstDescendant(cf => cf.ByName("LIVE")) is not null)
                     {
                         info.IsRadio = true;
                     }
 
                     // Volume slider
                     /*
-                    var volumeBtn = content.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
+                    var volumeBtn = content?.FindFirstDescendant(cf => cf.ByAutomationId("VolumeButton"))?.AsButton();
                     if (volumeBtn != null)
                     {
                         var popupHost = window.FindFirstChild(cf => cf.ByClassName("Microsoft.UI.Content.PopupWindowSiteBridge"));
@@ -551,7 +557,7 @@ namespace iTunes.SMTC.AppleMusic
                         repeatBtn?.Toggle();
 
                         // Update button state
-                        _systemMediaTransportControls.AutoRepeatMode = repeatBtn.ToggleState switch
+                        _systemMediaTransportControls.AutoRepeatMode = repeatBtn?.ToggleState switch
                         {
                             FlaUI.Core.Definitions.ToggleState.Off => MediaPlaybackAutoRepeatMode.None,
                             FlaUI.Core.Definitions.ToggleState.Indeterminate => MediaPlaybackAutoRepeatMode.Track,
